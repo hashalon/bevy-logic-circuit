@@ -1,18 +1,11 @@
 [package]
-name = "bevy-planet-shooter"
-version = "0.1.0"
+name = "bevy-logic-circuit"
+version = "0.0.1"
 edition = "2021"
 license = "Proprietary"
 authors = ["Olivier Schyns"]
 
-
-
-
-
 [dependencies]
-
 # bevy framework
-bevy = {version="0.6.0", features=["dynamic"]}
+bevy = {version="0.7.0", features=["dynamic"]}
 
-# physics engine
-bevy_rapier3d = {version="0.12.0", features=["simd-stable", "parallel", "render"]}

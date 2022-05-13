@@ -1,2 +1,2 @@
-# bevy-planet-shooter
-simple FPS controller that can run around planets
+# bevy-logic-circuit
+allow to generate logic circuits from voxel model
