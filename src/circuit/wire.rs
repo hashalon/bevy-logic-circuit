@@ -8,7 +8,7 @@ use crate::circuit::base::*;
 // wire entity
 #[derive(Bundle)]
 pub struct WireBundle {
-    pub index: PinIndex,
+    pub index: PinChannel,
     pub prev: DataPrevious,
     pub next: DataNext,
 }

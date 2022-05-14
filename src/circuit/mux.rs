@@ -34,7 +34,7 @@ pub struct DemuxBundle {
 // combine multiple input values as boolean into a single wire
 pub fn sys_tick_mux(
     comp_query: Query<(&PinsIn, &PinsOut), With<Mux>>,
-    prev_query: Query<(&PinIndex, &DataPrevious)>,
+    prev_query: Query<(&PinChannel, &DataPrevious)>,
     mut next_query: Query<&mut DataNext>
 ) {
     for (pins_in, pins_out) in comp_query.iter() {
@@ -60,7 +60,7 @@ pub fn sys_tick_mux(
 pub fn sys_tick_demux(
     comp_query: Query<(&Demux, &PinsIn, &PinsOut)>,
     prev_query: Query<&DataPrevious>,
-    mut next_query: Query<(&PinIndex, &mut DataNext)>
+    mut next_query: Query<(&PinChannel, &mut DataNext)>
 ) {
     for (output, pins_in, pins_out) in comp_query.iter() {
 

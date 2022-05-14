@@ -6,6 +6,18 @@ use bevy::prelude::*;
 use crate::circuit::base::*;
 
 
+// operators available
+#[derive(Component)]
+pub enum Operator {
+    Or,
+    Nor,
+    And,
+    Nand,
+    Add,
+    Mul,
+}
+
+
 // constant entity
 #[derive(Bundle)]
 pub struct GateBundle {

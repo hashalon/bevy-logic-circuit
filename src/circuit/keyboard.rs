@@ -10,7 +10,7 @@ use crate::circuit::base::*;
 // pool keyboard inputs and convert it into a data buffer
 #[derive(Component)]
 pub struct KeyboardDevice {
-    buffer: [Data; CHANNELS],
+    buffer: [Data; NB_CHANNELS],
 }
 
 // allow to input keyboard inputs into the circuit
@@ -35,7 +35,7 @@ pub fn sys_reset(
 
         // find which word and which bit of the buffer to write to
         let code = event.scan_code as usize;
-        let word = code / CHANNELS;
+        let word = code / NB_CHANNELS;
         let bit  = code % DATA_SIZE;
 
         // add or remove a bit from the buffer
@@ -51,7 +51,7 @@ pub fn sys_reset(
 pub fn sys_tick(
     device: Res<KeyboardDevice>,
     comp_query: Query<&PinsOut, With<KeyboardConnector>>,
-    mut next_query: Query<(&PinIndex, &mut DataNext)>
+    mut next_query: Query<(&PinChannel, &mut DataNext)>
 ) {
     for pins_out in comp_query.iter() {
 

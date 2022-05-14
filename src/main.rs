@@ -1,7 +1,10 @@
 use bevy::prelude::*;
 
 
+mod builder;
 mod circuit;
+
+use builder::*;
 use circuit::*;
 
 
