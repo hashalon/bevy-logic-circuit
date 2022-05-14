@@ -6,21 +6,18 @@ use bevy::prelude::*;
 use crate::circuit::base::*;
 
 
-// operators available
-#[derive(Component)]
-pub enum Operator {
-    Or,
-    Nor,
-    And,
-    Nand,
-    Add,
-    Mul,
+// constant entity
+#[derive(Bundle)]
+pub struct GateBundle {
+    pub operator: Operator,
+    pub pins_in : PinsIn,
+    pub pins_out: PinsOut,
 }
 
 
 // handle logic gates
 pub fn sys_tick(
-    comp_query: Query<(&Operator, &Inputs, &Outputs)>,
+    comp_query: Query<(&Operator, &PinsIn, &PinsOut)>,
     prev_query: Query<&DataPrevious>,
     mut next_query: Query<&mut DataNext>
 ) {

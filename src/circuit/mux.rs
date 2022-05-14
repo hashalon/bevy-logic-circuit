@@ -3,7 +3,7 @@
  */
 
 use bevy::prelude::*;
-use crate::circuit::*;
+use crate::circuit::base::*;
 
 // multiplexer
 #[derive(Component)]
@@ -14,9 +14,26 @@ pub struct Mux;
 pub struct Demux(Data);
 
 
+// mux entity
+#[derive(Bundle)]
+pub struct MuxBundle {
+    pub comp: Mux,
+    pub pins_in : PinsIn,
+    pub pins_out: PinsOut,
+}
+
+// mux entity
+#[derive(Bundle)]
+pub struct DemuxBundle {
+    pub comp: Demux,
+    pub pins_in : PinsIn,
+    pub pins_out: PinsOut,
+}
+
+
 // combine multiple input values as boolean into a single wire
 pub fn sys_tick_mux(
-    comp_query: Query<(&Inputs, &Outputs), With<Mux>>,
+    comp_query: Query<(&PinsIn, &PinsOut), With<Mux>>,
     prev_query: Query<(&PinIndex, &DataPrevious)>,
     mut next_query: Query<&mut DataNext>
 ) {
@@ -41,7 +58,7 @@ pub fn sys_tick_mux(
 
 // split an input value into multiple boolean output
 pub fn sys_tick_demux(
-    comp_query: Query<(&Demux, &Inputs, &Outputs)>,
+    comp_query: Query<(&Demux, &PinsIn, &PinsOut)>,
     prev_query: Query<&DataPrevious>,
     mut next_query: Query<(&PinIndex, &mut DataNext)>
 ) {

@@ -26,42 +26,31 @@ pub struct PinIndex(pub u8);
 
 // inputs entering a component
 #[derive(Component)]
-pub struct Inputs(pub Vec<Entity>);
+pub struct PinsIn(pub Vec<Entity>);
 
 // outputs leaving a component
 #[derive(Component)]
-pub struct Outputs(pub Vec<Entity>);
+pub struct PinsOut(pub Vec<Entity>);
 
 
-// constant input value
+// operators available
 #[derive(Component)]
-pub struct Constant(pub Data);
-
-
-
-// reset the state of every wire
-pub fn sys_reset(
-    mut query: Query<(&mut DataPrevious, &mut DataNext)>
-) {
-    query.for_each_mut(|(mut wire_prev, mut wire_next)| {
-        wire_prev.0 = wire_next.0;
-        wire_next.0 = 0;
-    });
+pub enum Operator {
+    Or,
+    Nor,
+    And,
+    Nand,
+    Add,
+    Mul,
 }
 
 
-// simply apply the constant
-pub fn sys_tick(
-    comp_query: Query<(&Constant, &Outputs)>,
-    mut next_query: Query<&mut DataNext>
-) {
-    for (constant, pins_out) in comp_query.iter() {
-
-        // apply the value to all output wires
-        for id in pins_out.0.iter() {
-            if let Ok(mut pin) = next_query.get_mut(*id) {
-                pin.0 |= constant.0;
-            }
-        }
-    }
+pub enum CompType {
+    Constant,
+    Gate(Operator),
+    Mux,
+    Demux,
+    Keyboard,
 }
+
+

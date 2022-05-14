@@ -18,6 +18,14 @@ pub struct KeyboardDevice {
 pub struct KeyboardConnector;
 
 
+// constant entity
+#[derive(Bundle)]
+pub struct KeyboardBundle {
+    pub comp: KeyboardConnector,
+    pub pins_out: PinsOut,
+}
+
+
 // apply computed buffer to output pins
 pub fn sys_reset(
     mut events: EventReader<KeyboardInput>,
@@ -42,7 +50,7 @@ pub fn sys_reset(
 // apply computed buffer to output pins
 pub fn sys_tick(
     device: Res<KeyboardDevice>,
-    comp_query: Query<&Outputs, With<KeyboardConnector>>,
+    comp_query: Query<&PinsOut, With<KeyboardConnector>>,
     mut next_query: Query<(&PinIndex, &mut DataNext)>
 ) {
     for pins_out in comp_query.iter() {
