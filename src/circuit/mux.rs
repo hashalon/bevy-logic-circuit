@@ -1,6 +1,6 @@
 /**
  * multiplexer and demultiplexer
-*/
+ */
 
 use bevy::prelude::*;
 use crate::circuit::*;
@@ -41,11 +41,11 @@ pub fn sys_tick_mux(
 
 // split an input value into multiple boolean output
 pub fn sys_tick_demux(
-    comp_query: Query<(&Inputs, &Outputs, &Demux)>,
+    comp_query: Query<(&Demux, &Inputs, &Outputs)>,
     prev_query: Query<&DataPrevious>,
     mut next_query: Query<(&PinIndex, &mut DataNext)>
 ) {
-    for (pins_in, pins_out, output) in comp_query.iter() {
+    for (output, pins_in, pins_out) in comp_query.iter() {
 
         // find the values of input wires
         let mut data: Data = 0;

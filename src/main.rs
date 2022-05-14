@@ -2,7 +2,6 @@ use bevy::prelude::*;
 
 
 mod circuit;
-
 use circuit::*;
 
 

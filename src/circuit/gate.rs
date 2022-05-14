@@ -1,6 +1,6 @@
 /**
  * logic components to build circuitry
-*/
+ */
 
 use bevy::prelude::*;
 use crate::circuit::base::*;
