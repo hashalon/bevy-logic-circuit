@@ -5,7 +5,33 @@
 use bevy::prelude::*;
 
 
+// Data that is transmitted over wires
+pub type Data = u16;
+
+// index/color of a wire
+#[derive(Component)]
+pub struct PinIndex(u8);
+
+// data on the wire on the previous tick
+#[derive(Component)]
+pub struct DataPrevious(Data);
+
+// data on the wire on the next tick
+#[derive(Component)]
+pub struct DataNext(Data);
+
+
+// inputs entering a component
+#[derive(Component)]
+pub struct Inputs(Vec<Entity>);
+
+// outputs leaving a component
+#[derive(Component)]
+pub struct Outputs(Vec<Entity>);
+
+
 // operators available
+#[derive(Component)]
 pub enum Operator {
     Or,
     Nor,
@@ -15,78 +41,114 @@ pub enum Operator {
     Mul,
 }
 
-
-// represent a logic gate or an adder, multiplier
+// multiplexer
 #[derive(Component)]
-pub struct Gate {
-    operator: Operator,
-    input_wires: Vec<Entity>,
-    output_wires: Vec<Entity>,
+pub struct Mux;
+
+// demultiplexer with output value to emit on each wire
+#[derive(Component)]
+pub struct Demux(Data);
+
+
+
+// reset the state of every wire
+pub fn sys_reset_wires(
+    mut query: Query<(&mut DataPrevious, &mut DataNext)>
+) {
+    query.for_each_mut(|(mut wire_prev, mut wire_next)| {
+        wire_prev.0 = wire_next.0;
+        wire_next.0 = 0;
+    });
 }
 
-#[derive(Component)]
-pub struct WirePreviousValue(u16);
 
-#[derive(Component)]
-pub struct WireNextValue(u16);
-
-#[derive(Component)]
-pub struct WireIndex(u8);
-
-
-// apply operation to data from input wires
-pub fn sys_tick_gate(
-    gate_query: Query<&Gate>,
-    wire_prev_query: Query<&WirePreviousValue>,
-    mut wire_next_query: Query<&mut WireNextValue>
+// handle logic gates
+pub fn sys_tick_gates(
+    comp_query: Query<(&Operator, &Inputs, &Outputs)>,
+    prev_query: Query<&DataPrevious>,
+    mut next_query: Query<&mut DataNext>
 ) {
-    for gate in gate_query.iter() {
+    for (operator, pins_in, pins_out) in comp_query.iter() {
 
         // find the values of input wires
-        let mut values = Vec::<u16>::with_capacity(gate.input_wires.len());
-        for id in gate.input_wires.iter() {
-            if let Ok(wire) = wire_prev_query.get(*id) {
-                values.push(wire.0);
+        let mut values = Vec::<Data>::with_capacity(pins_in.0.len());
+        for id in pins_in.0.iter() {
+            if let Ok(pin) = prev_query.get(*id) {
+                values.push(pin.0);
             }
         }
 
         // compute the output value
-        let mut out: u16 = 0;
-        match gate.operator {
-            Operator::Or | Operator::Nor => for v in values.iter() {
-                out |= v;
-            },
-            Operator::And | Operator::Nand => for v in values.iter() {
-                out &= v;
-            },
-            Operator::Add => for v in values.iter() {
-                out += v;
-            },
-            Operator::Mul => for v in values.iter() {
-                out *= v;
-            },
+        let mut data: Data = 0;
+        match operator {
+            Operator::Or  | Operator::Nor  => for v in values.iter() {data |= v;},
+            Operator::And | Operator::Nand => for v in values.iter() {data &= v;},
+            Operator::Add => for v in values.iter() {data += v;},
+            Operator::Mul => for v in values.iter() {data *= v;},
         }
-        match gate.operator {
-            Operator::Nor | Operator::Nand => out = !out,
+        match operator {
+            Operator::Nor | Operator::Nand => data = !data,
             _ => ()
         }
 
         // apply the value to all output wires
-        for id in gate.output_wires.iter() {
-            if let Ok(mut wire) = wire_next_query.get_mut(*id) {
-                wire.0 |= out;
+        for id in pins_out.0.iter() {
+            if let Ok(mut pin) = next_query.get_mut(*id) {
+                pin.0 |= data;
             }
         }
     }
 }
 
 
-// reset the state of every wire
-pub fn sys_tick_wire(
-    mut wire_query: Query<(&mut WirePreviousValue, &mut WireNextValue)>
+// combine multiple input values as boolean into a single wire
+pub fn sys_tick_muxes(
+    comp_query: Query<(&Inputs, &Outputs), With<Mux>>,
+    prev_query: Query<(&PinIndex, &DataPrevious)>,
+    mut next_query: Query<&mut DataNext>
 ) {
-    for (mut wire_prev, mut wire_next) in wire_query.iter_mut() {
-        wire_prev.0 = wire_next.0;
-        wire_next.0 = 0;
+    for (pins_in, pins_out) in comp_query.iter() {
+
+        // find the values of input wires
+        let mut data: Data = 0;
+        for id in pins_in.0.iter() {
+            if let Ok((index, pin)) = prev_query.get(*id) {
+                data |= if pin.0 != 0 {1} else {0} << index.0;
+            }
+        }
+
+        // apply the value to all output wires
+        for id in pins_out.0.iter() {
+            if let Ok(mut pin) = next_query.get_mut(*id) {
+                pin.0 |= data;
+            }
+        }
+    }
+}
+
+// split an input value into multiple boolean output
+pub fn sys_tick_demuxes(
+    comp_query: Query<(&Inputs, &Outputs, &Demux)>,
+    prev_query: Query<&DataPrevious>,
+    mut next_query: Query<(&PinIndex, &mut DataNext)>
+) {
+    for (pins_in, pins_out, output) in comp_query.iter() {
+
+        // find the values of input wires
+        let mut data: Data = 0;
+        for id in pins_in.0.iter() {
+            if let Ok(pin) = prev_query.get(*id) {
+                data |= pin.0;
+            }
+        }
+
+        // apply the value to all output wires
+        for id in pins_out.0.iter() {
+            if let Ok((index, mut pin)) = next_query.get_mut(*id) {
+                if ((data >> index.0) & 1) != 1 {
+                    pin.0 |= output.0;
+                }
+            }
+        }
     }
 }
