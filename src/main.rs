@@ -1,11 +1,14 @@
 use bevy::prelude::*;
 
 
-mod builder;
+mod math;
 mod circuit;
+mod builder;
 
-use builder::*;
+
+use math::*;
 use circuit::*;
+use builder::*;
 
 
 fn main() {

@@ -1,5 +1,6 @@
 use std::fs::File;
 use std::io::BufReader;
+use crate::math::*;
 use crate::builder::voxel::*;
 
 
@@ -10,7 +11,7 @@ type Word  = [u8; 4];
 
 
 pub fn load_xraw() -> Model {
-
+    // https://dev.to/dandyvica/different-ways-of-reading-files-in-rust-2n30
     if let Ok(file) = File::open("some_file.txt") {
         let mut reader = BufReader::new(file);
 

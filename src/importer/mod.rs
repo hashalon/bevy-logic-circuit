@@ -1,11 +1,10 @@
 use bevy::prelude::*;
-use crate::circuit::*;
+
 
 mod voxel;
 mod loader_xraw;
 
 pub use voxel::{
-    Vec3i,
     Type,
     Model,
 };
