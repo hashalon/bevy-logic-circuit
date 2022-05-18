@@ -1,7 +1,7 @@
 use std::fs::File;
 use std::io::BufReader;
 use crate::math::*;
-use crate::builder::voxel::*;
+use crate::importer::voxel::*;
 
 
 // read data from the binary file
@@ -37,7 +37,7 @@ pub fn load_xraw() -> Model {
         reader.read(nb_colors);
         */
     }
-    let size = Vec3i::make(0, 0, 0);
+    let size = Vec3i::new(0, 0, 0);
     let mut model = Model::prepare(size);
 
 

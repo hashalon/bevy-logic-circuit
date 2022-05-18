@@ -3,12 +3,12 @@ use bevy::prelude::*;
 
 mod math;
 mod circuit;
-mod builder;
+mod importer;
 
 
 use math::*;
 use circuit::*;
-use builder::*;
+use importer::*;
 
 
 fn main() {
