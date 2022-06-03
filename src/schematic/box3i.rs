@@ -1,30 +1,28 @@
 /**
  * represent a model to build and to display in bevy
  */
-use crate::math::vec3i::*;
+use crate::schematic::vec3i::*;
+use serde::{Deserialize, Serialize};
 
-
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Serialize, Deserialize)]
 pub struct Box3i {
-    pub point: Vec3i,
-    pub size:  Vec3i,
+    pub point : Vec3i,
+    pub size  : Vec3i,
 }
 
-
-pub const PER_BOX_VERTEXES: usize = 8; // count vertexes
-pub const PER_BOX_INDEXES:  usize = 6 * 6; // count indexes
-
+pub const PER_BOX_VERTEXES : usize = 8; // count vertexes
+pub const PER_BOX_INDEXES  : usize = 6 * 6; // count indexes
 
 // template
 const VERTEXES: [Vec3i; PER_BOX_VERTEXES] = [
-    Vec3i{x: 0, y: 0, z: 0}, // front-bottom-left
-    Vec3i{x: 1, y: 0, z: 0}, // front-bottom-right
-    Vec3i{x: 1, y: 1, z: 0}, // front-top-right
-    Vec3i{x: 0, y: 1, z: 0}, // front-top-left
-    Vec3i{x: 0, y: 0, z: 1}, // back-bottom-left
-    Vec3i{x: 1, y: 0, z: 1}, // back-bottom-right
-    Vec3i{x: 1, y: 1, z: 1}, // back-top-right
-    Vec3i{x: 0, y: 1, z: 1}, // back-top-left
+    Vec3i { x: 0, y: 0, z: 0 }, // front-bottom-left
+    Vec3i { x: 1, y: 0, z: 0 }, // front-bottom-right
+    Vec3i { x: 1, y: 1, z: 0 }, // front-top-right
+    Vec3i { x: 0, y: 1, z: 0 }, // front-top-left
+    Vec3i { x: 0, y: 0, z: 1 }, // back-bottom-left
+    Vec3i { x: 1, y: 0, z: 1 }, // back-bottom-right
+    Vec3i { x: 1, y: 1, z: 1 }, // back-top-right
+    Vec3i { x: 0, y: 1, z: 1 }, // back-top-left
 ];
 
 // template
@@ -37,12 +35,8 @@ const INDEXES: [u32; PER_BOX_INDEXES] = [
     3, 7, 2, 2, 7, 6, // top
 ];
 
-
 impl Box3i {
-    pub fn add_to_model(&self,
-        vertexes: &mut Vec<Vertex>,
-        indexes:  &mut Vec<u32>
-    ) {
+    pub fn add_to_model(&self, vertexes: &mut Vec<Vertex>, indexes: &mut Vec<u32>) {
         // keep track of the new start index
         // before adding new vertexes
         let start = vertexes.len() as u32;

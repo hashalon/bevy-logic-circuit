@@ -1,5 +1,5 @@
+/*
 use bevy::prelude::*;
-
 
 mod voxel;
 mod loader_xraw;
@@ -12,7 +12,7 @@ pub use loader_xraw::load_xraw;
 
 
 
-/* build a wire entity
+// build a wire entity
 pub fn start_load_circuit(mut commands: Commands, server: Res<AssetServer>) {
     let handle: Handle<> = server.load();
 
@@ -25,4 +25,5 @@ pub fn start_load_circuit(mut commands: Commands, server: Res<AssetServer>) {
             next: DataNext(0),
         });
 }
+
 */

@@ -1,17 +1,20 @@
 use bevy::prelude::*;
 
 
-mod math;
+mod schematic;
 mod circuit;
-mod importer;
+//mod importer;
 
 
-use math::*;
+use schematic::*;
 use circuit::*;
-use importer::*;
+//use importer::*;
 
 
 fn main() {
+    let schema = Schema::new();
+    let res = schema.verify();
+
     App::new()
         .add_plugins(DefaultPlugins)
         .add_plugin(CircuitPlugin)

@@ -1,8 +1,7 @@
+/*
 use std::ops;
-use crate::math::*;
+use crate::schematic::*;
 use crate::circuit::*;
-
-
 
 
 // provide descriptive types for voxel data
@@ -75,3 +74,5 @@ impl ops::IndexMut<Vec3i> for Model {
         }
     }
 }
+
+*/

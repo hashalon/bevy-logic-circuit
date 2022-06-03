@@ -4,10 +4,11 @@
 
 use bevy::prelude::*;
 use crate::circuit::base::*;
+use serde::{Deserialize, Serialize};
 
 
 // operators available
-#[derive(Component)]
+#[derive(Component, Deserialize, Serialize)]
 pub enum Operator {
     Or,
     Nor,
