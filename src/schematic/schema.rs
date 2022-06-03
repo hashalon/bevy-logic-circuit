@@ -14,16 +14,6 @@ pub struct Schema {
 }
 
 
-// error types when analyzing a schematic
-pub enum Error {
-    WireChannel(usize, Channel),
-    WireModel  (usize, Index),
-    ElemModel  (usize, Index),
-    ElemPinIn  (usize, usize),
-    ElemPinOut (usize, usize),
-}
-
-
 impl Schema {
     pub fn new() -> Self {
         Self {
@@ -96,4 +86,26 @@ impl Schema {
         let value: Self = bincode::deserialize(data).unwrap();
     } // */
 
+}
+
+
+// error types when analyzing a schematic
+pub enum Error {
+    WireChannel(usize, Channel),
+    WireModel  (usize, Index),
+    ElemModel  (usize, Index),
+    ElemPinIn  (usize, usize),
+    ElemPinOut (usize, usize),
+}
+
+impl Error {
+    pub fn message (&self) -> String {
+        match self {
+            Self::WireChannel(id, chann) => "",
+            Self::WireModel  (id, model) => "",
+            Self::ElemModel  (id, model) => "",
+            Self::ElemPinIn  (id, pin  ) => "",
+            Self::ElemPinOut (id, pin  ) => "",
+        }.to_string()
+    }
 }
