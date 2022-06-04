@@ -22,20 +22,21 @@ pub use base::{
     PinChannel,
     PinsIn,
     PinsOut,
+    BundleModel,
 };
 pub use wire::WireBundle;
-pub use constant::{Constant, ConstBundle};
-pub use gate::{Operator, GateBundle};
+pub use constant::{Constant, BundleConst};
+pub use gate::{Operator, BundleGate};
 pub use mux::{
     Mux,
     Demux,
-    MuxBundle,
-    DemuxBundle,
+    BundleMux,
+    BundleDemux,
 };
 pub use keyboard::{
     KeyboardDevice,
     KeyboardConnector,
-    KeyboardBundle,
+    BundleKeyboard,
 };
 
 

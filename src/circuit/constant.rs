@@ -12,7 +12,7 @@ pub struct Constant(pub Data);
 
 // constant entity
 #[derive(Bundle)]
-pub struct ConstBundle {
+pub struct BundleConst {
     pub comp: Constant,
     pub pins_out: PinsOut,
 }

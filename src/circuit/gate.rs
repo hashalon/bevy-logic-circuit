@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 
 
 // operators available
-#[derive(Component, Deserialize, Serialize)]
+#[derive(Clone, Copy, Component, Deserialize, Serialize)]
 pub enum Operator {
     Or,
     Nor,
@@ -21,7 +21,7 @@ pub enum Operator {
 
 // constant entity
 #[derive(Bundle)]
-pub struct GateBundle {
+pub struct BundleGate {
     pub operator: Operator,
     pub pins_in : PinsIn,
     pub pins_out: PinsOut,

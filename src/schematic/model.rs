@@ -1,6 +1,7 @@
 /**
  * represent a model to load, build and to display in bevy
  */
+use crate::circuit::BundleModel;
 use crate::schematic::*;
 use bevy::{prelude::*, render::mesh::*};
 use serde::{Deserialize, Serialize};
@@ -13,10 +14,18 @@ pub struct ModelAttr {
     pub index    : Index,
 }
 
-
 // the actual model representation
 #[derive(Serialize, Deserialize)]
 pub struct ModelData (Vec<Box3i>);
+
+
+impl ModelAttr {
+    pub fn bundle(&self) -> BundleModel {
+        BundleModel {
+
+        }
+    }
+}
 
 
 impl ModelData {

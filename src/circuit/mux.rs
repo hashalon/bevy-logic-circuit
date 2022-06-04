@@ -11,12 +11,12 @@ pub struct Mux;
 
 // demultiplexer with output value to emit on each wire
 #[derive(Component)]
-pub struct Demux(Data);
+pub struct Demux(pub Data);
 
 
 // mux entity
 #[derive(Bundle)]
-pub struct MuxBundle {
+pub struct BundleMux {
     pub comp: Mux,
     pub pins_in : PinsIn,
     pub pins_out: PinsOut,
@@ -24,7 +24,7 @@ pub struct MuxBundle {
 
 // mux entity
 #[derive(Bundle)]
-pub struct DemuxBundle {
+pub struct BundleDemux {
     pub comp: Demux,
     pub pins_in : PinsIn,
     pub pins_out: PinsOut,

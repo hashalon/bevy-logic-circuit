@@ -1,6 +1,7 @@
 /**
  * represent a model to load, build and to display in bevy
  */
+use bevy::prelude::*;
 use crate::circuit::{Channel, NB_CHANNELS};
 use crate::schematic::*;
 use serde::{Deserialize, Serialize};
@@ -72,10 +73,6 @@ impl Schema {
 
     }
 
-    pub fn to_circuit(&self) {
-
-    }
-
     /* save to a file
     pub fn save(&self) {
         let bin: Vec<u8> = bincode::serialize(&self).unwrap();
@@ -89,6 +86,56 @@ impl Schema {
 }
 
 
+// build the whole circuit
+pub fn build_circuit (mut commands: Commands, schema: Res<Schema>) {
+
+    // generate list of wires
+    let wires: Vec<Entity> = schema.wires.iter().map(|wire|
+        commands
+        .spawn_bundle (wire.model_attr.bundle())
+        .insert_bundle(wire.bundle()).id()
+    ).collect();
+
+    // generate list of elements
+    for elem in schema.elements.iter() {
+        /* TODO: could be used as soon as bevy support Bundle to be made into objects
+        commands
+        .spawn_bundle(elem.model_attr.bundle())
+        .insert_bundle(elem.bundle(&wires));
+        // */
+
+        // for now we have to implement a bundle fonction for each element type
+        match elem.type_elem {
+            Type::Constant(value) => {
+                commands
+                .spawn_bundle (elem.model_attr.bundle())
+                .insert_bundle(elem.bundle_const(&wires, value));
+            },
+            Type::Gate(op) => {
+                commands
+                .spawn_bundle (elem.model_attr.bundle())
+                .insert_bundle(elem.bundle_gate(&wires, op));
+            },
+            Type::Mux => {
+                commands
+                .spawn_bundle (elem.model_attr.bundle())
+                .insert_bundle(elem.bundle_mux(&wires));
+            },
+            Type::Demux(value) => {
+                commands
+                .spawn_bundle (elem.model_attr.bundle())
+                .insert_bundle(elem.bundle_demux(&wires, value));
+            },
+            Type::Keyboard => {
+                commands
+                .spawn_bundle (elem.model_attr.bundle())
+                .insert_bundle(elem.bundle_keyboard(&wires));
+            },
+        };
+    }
+}
+
+
 // error types when analyzing a schematic
 pub enum Error {
     WireChannel(usize, Channel),
@@ -99,13 +146,13 @@ pub enum Error {
 }
 
 impl Error {
-    pub fn message (&self) -> String {
+    pub fn message (&self) -> &str {
         match self {
             Self::WireChannel(id, chann) => "",
             Self::WireModel  (id, model) => "",
             Self::ElemModel  (id, model) => "",
             Self::ElemPinIn  (id, pin  ) => "",
             Self::ElemPinOut (id, pin  ) => "",
-        }.to_string()
+        }
     }
 }

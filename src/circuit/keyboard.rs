@@ -20,7 +20,7 @@ pub struct KeyboardConnector;
 
 // constant entity
 #[derive(Bundle)]
-pub struct KeyboardBundle {
+pub struct BundleKeyboard {
     pub comp: KeyboardConnector,
     pub pins_out: PinsOut,
 }

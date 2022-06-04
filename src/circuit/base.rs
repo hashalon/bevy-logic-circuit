@@ -33,3 +33,6 @@ pub struct PinsIn(pub Vec<Entity>);
 #[derive(Component)]
 pub struct PinsOut(pub Vec<Entity>);
 
+
+#[derive(Bundle)]
+pub struct BundleModel {}
