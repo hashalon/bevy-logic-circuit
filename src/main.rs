@@ -12,6 +12,8 @@ use circuit::*;
 
 
 fn main() {
+    
+
     let schema = Schema::new();
 
     match schema.verify() {
