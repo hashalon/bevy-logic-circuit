@@ -1,20 +1,25 @@
 use bevy::prelude::*;
 
 
+mod math;
+mod voxel;
 mod schematic;
 mod circuit;
 //mod importer;
 
 
+use math::*;
+use voxel::*;
 use schematic::*;
 use circuit::*;
 //use importer::*;
 
 
 fn main() {
-    
 
     let schema = Schema::new();
+
+    let matrix = Matrix::new(Vec3i::new(12, 12, 12));
 
     match schema.verify() {
         Ok(_) => {

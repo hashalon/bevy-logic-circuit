@@ -10,4 +10,7 @@ authors = ["Olivier Schyns"]
 bevy  = {version="0.7.0",  features=["dynamic"]}
 clap  = {version="3.1.18", features=["derive"]}
 serde = {version="1.0",    features=["derive" ]}
+
+#ndarray = "0.15.4"
 bincode = "1.2.1"
+partitions = "0.2.4"
