@@ -5,17 +5,20 @@
 use bevy::prelude::*;
 use crate::circuit::base::*;
 use serde::{Deserialize, Serialize};
+use std::cmp::{min, max};
 
 
 // operators available
 #[derive(Clone, Copy, Component, Deserialize, Serialize)]
 pub enum Operator {
     Or,
-    Nor,
     And,
+    Nor,
     Nand,
     Add,
     Mul,
+    Min,
+    Max,
 }
 
 
@@ -46,6 +49,7 @@ pub fn sys_tick(
 
         // compute the output value
         let mut data: Data = 0;
+        /*
         match operator {
             Operator::Or  | Operator::Nor  => for v in values.iter() {data |= v;},
             Operator::And | Operator::Nand => for v in values.iter() {data &= v;},
@@ -55,6 +59,23 @@ pub fn sys_tick(
         match operator {
             Operator::Nor | Operator::Nand => data = !data,
             _ => ()
+        }
+        */
+        match operator {
+            Operator::Or   => values.iter().for_each(|v| data |= v),
+            Operator::And  => values.iter().for_each(|v| data &= v),
+            Operator::Nor  => {
+                values.iter().for_each(|v| data |= v);
+                data = !data;
+            },
+            Operator::Nand => {
+                values.iter().for_each(|v| data &= v);
+                data = !data;
+            },
+            Operator::Add  => values.iter().for_each(|v| data += v),
+            Operator::Mul  => values.iter().for_each(|v| data *= v),
+            Operator::Min  => values.iter().for_each(|v| data = min(data, v)),
+            Operator::Max  => values.iter().for_each(|v| data = max(data, v)),
         }
 
         // apply the value to all output wires
