@@ -144,67 +144,6 @@ impl Matrix {
             }
         });
 
-        /*
-        for z in 0..self.size.z {
-            for y in 0..self.size.y {
-                for x in 0..self.size.x {
-
-                    let i = self.index(x, y, z);
-                    let v = self.data[i];
-
-                    // cells which value is null are simply empty
-                    if v > 0 {
-                        // check for combinations using a bitmask
-                        let mut mask = 0b000usize;
-
-                        // compute indexes if necessary
-                        let mut ix = 0usize;
-                        let mut iy = 0usize;
-                        let mut iz = 0usize;
-
-                        // if we are not on the first element of each coord,
-                        // indicate that we need to compare to previous element
-                        if x > 0 {
-                            ix = self.index(x - 1, y, z);
-                            if v == self.data[ix] {mask |= 0b001;}
-                        }
-                        if y > 0 {
-                            iy = self.index(x, y - 1, z);
-                            if v == self.data[iy] {mask |= 0b010;}
-                        }
-                        if z > 0 {
-                            iz = self.index(x, y, z - 1);
-                            if v == self.data[iz] {mask |= 0b100;}
-                        }
-
-                        match mask {
-                            0b111 => {
-                                let lx = matrix.data[ix];
-                                let ly = matrix.data[iy];
-                                let lz = matrix.data[iz];
-                                matrix.data[i] = min(lx, min(ly, lz));
-                                partition.union(lx as usize, ly as usize);
-                                partition.union(lx as usize, lz as usize);
-                            },
-                            0b110 => __associate!(matrix, partition, i, iy, iz),
-                            0b101 => __associate!(matrix, partition, i, ix, iz),
-                            0b011 => __associate!(matrix, partition, i, ix, iy),
-                            0b100 => matrix.data[i] = matrix.data[iz],
-                            0b010 => matrix.data[i] = matrix.data[iy],
-                            0b001 => matrix.data[i] = matrix.data[ix],
-                            0b000 => {
-                                matrix.data[i] = current;
-                                partition.push(current);
-                                current += 1;
-                            },
-                            _ => {}
-                        }
-                    }
-                }
-            }
-        }
-        */
-
         /* SECOND PASS */
         // convert the disjoint-set into a hashmap
         // to join labels into a single one
@@ -221,7 +160,6 @@ impl Matrix {
         for cell in matrix.data.iter_mut() {
             *cell = map[cell];
         }
-
         return (matrix, nb_labels);
     }
 
@@ -238,22 +176,6 @@ impl Matrix {
             let abox  = boxes[label];
             boxes[label] = Box3i::new(abox.begin.min(curr), abox.end.max(curr));
         });
-
-        /* iterate over the whole matrix
-        for z in 0..self.size.z {
-            for y in 0..self.size.y {
-                for x in 0..self.size.x {
-
-                    // get the label
-                    let label = self.data[self.index(x, y, z)] as usize;
-                    let curr  = Vec3i::new(x, y, z);
-                    let abox  = boxes[label];
-                    boxes[label] = Box3i::new(abox.begin.min(curr), abox.end.max(curr));
-                }
-            }
-        }
-        */
-
         return boxes;
     }
 
@@ -270,20 +192,6 @@ impl Matrix {
             }
             index += 1;
         });
-
-        /* analyze the portion of the matrix to deduce a morphologic signature for the label
-        for z in abox.begin.z..abox.end.z {
-            for y in abox.begin.y..abox.end.y {
-                for x in abox.begin.x..abox.end.x {
-                    if label == self.data[self.index(x, y, z)] {
-                        bitvec.set(index, true);
-                    }
-                    index += 1;
-                }
-            }
-        }
-        */
-
         let mut hasher = MetroHasher::default();
         bitvec.hash(&mut hasher);
         hasher.finish()
@@ -314,21 +222,6 @@ impl Matrix {
                 }
             }
         });
-
-        /*
-        for z in abox.begin.z..abox.end.z {
-            for y in abox.begin.y..abox.end.y {
-                for x in abox.begin.x..abox.end.x {
-                    if label == self.data[self.index(x, y, z)] {
-                        let begin = Vec3i::new(x, y, z);
-                        let end   = self.group_box(label, begin, abox.end);
-                        boxes.push(Box3i::new(begin - abox.begin, end - abox.begin));
-                    }
-                }
-            }
-        }
-        */
-
         boxes.shrink_to_fit();
         return ModelData(boxes);
     }
