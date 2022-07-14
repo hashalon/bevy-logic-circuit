@@ -17,7 +17,7 @@ pub struct ModelAttr {
 
 // the actual model representation
 #[derive(Serialize, Deserialize)]
-pub struct ModelData (Vec<Box3i>);
+pub struct ModelData (pub Vec<Box3i>);
 
 
 impl ModelAttr {

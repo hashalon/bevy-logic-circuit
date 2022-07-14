@@ -50,12 +50,20 @@ impl Vec3i {
     }
 
     #[inline]
-    pub fn min(&self) -> usize {
-        min(self.x, min(self.y, self.z))
+    pub fn min(&self, o: Self) -> Self {
+        Self {
+            x: min(self.x, o.x),
+            y: min(self.y, o.y),
+            z: min(self.z, o.z)
+        }
     }
     #[inline]
-    pub fn max(&self) -> usize {
-        max(self.x, max(self.y, self.z))
+    pub fn max(&self, o: Self) -> Self {
+        Self {
+            x: max(self.x, o.x),
+            y: max(self.y, o.y),
+            z: max(self.z, o.z)
+        }
     }
 }
 
