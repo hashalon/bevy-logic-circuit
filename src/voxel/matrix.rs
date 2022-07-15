@@ -7,14 +7,11 @@ use crate::math::{Vec3i, Box3i};
 use crate::schematic::ModelData;
 
 
-pub type Value = u32;
-
-
 // indicate position of the model and model to use
 #[derive(Serialize, Deserialize)]
-pub struct Matrix {
+pub struct Matrix<T> {
     pub size : Vec3i,
-    pub data : Vec<Value>
+    pub data : Vec<T>
 }
 
 
@@ -31,11 +28,11 @@ macro_rules! __associate {
 }
 
 
-impl Matrix {
+impl<T> Matrix<T> {
     pub fn new(size: Vec3i) -> Self {
         // allocate a vector with the correct size
         let buffer_size = size.x * size.y * size.z;
-        let mut buffer  = Vec::<Value>::with_capacity(buffer_size);
+        let mut buffer  = Vec::<T>::with_capacity(buffer_size);
         buffer.resize(buffer_size, 0);
 
         Self {
@@ -50,12 +47,12 @@ impl Matrix {
     }
     
     #[inline]
-    pub fn get(&self, index: Vec3i) -> Value {
+    pub fn get(&self, index: Vec3i) -> T {
         self.data[self.index(index.x, index.y, index.z)]
     }
 
     #[inline]
-    pub fn set(&mut self, index: Vec3i, value: Value) {
+    pub fn set(&mut self, index: Vec3i, value: T) {
         let index = self.index(index.x, index.y, index.z);
         self.data[index] = value;
     }
@@ -83,11 +80,11 @@ impl Matrix {
     }
 
     // basic two pass implementation of the 6-connected component labeling algorithm
-    pub fn connected_component_labeling(&self) -> (Matrix, usize) {
+    pub fn connected_component_labeling(&self) -> (Self<u32>, usize) {
         // prepare map of labels and set of union
         let mut current   = 1;
-        let mut matrix    = Matrix::new(self.size);
-        let mut partition = PartitionVec::<Value>::with_capacity(self.size.index_range() / 6);
+        let mut matrix    = Self::<u32>::new(self.size);
+        let mut partition = PartitionVec::<u32>::with_capacity(self.size.index_range() / 6);
 
         /* FIRST PASS */
         // iterate over the whole matrix
@@ -147,12 +144,12 @@ impl Matrix {
         /* SECOND PASS */
         // convert the disjoint-set into a hashmap
         // to join labels into a single one
-        let mut map = HashMap::<Value, Value>::new();
+        let mut map = HashMap::<u32, u32>::new();
         let nb_labels = partition.amount_of_sets();
         for i in 0..nb_labels {
             let set = partition.set(i);
             for (index, value) in set {
-                map.insert(*value, (index + 1) as Value);
+                map.insert(*value, (index + 1) as u32);
             }
         }
 
@@ -227,7 +224,7 @@ impl Matrix {
     }
 
     // find the end point of a new box to generate
-    fn group_box(&self, label: Value, from: Vec3i, to: Vec3i) -> Vec3i {
+    fn group_box(&self, label: u32, from: Vec3i, to: Vec3i) -> Vec3i {
         let mut end_point = to;
         // group a line
         'group_x: for x in (from.x + 1)..to.x {
