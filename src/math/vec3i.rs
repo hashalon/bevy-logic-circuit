@@ -7,7 +7,7 @@ use std::{ops, cmp::{min, max}};
 pub const NB_COORDS: usize = 3;
 pub type Vertex = [f32; NB_COORDS];
 
-#[derive(Clone, Copy, Serialize, Deserialize)]
+#[derive(Clone, Copy, Serialize, Deserialize, Hash)]
 pub struct Vec3i {
     pub x: usize,
     pub y: usize,
