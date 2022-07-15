@@ -1,10 +1,14 @@
 use serde::{Deserialize, Serialize};
-use partitions::PartitionVec;
 use std::{cmp::min, hash::{Hash, Hasher}, collections::HashMap};
+use disjoint_hash_set::DisjointHashSet;
 use bit_vec::BitVec;
 use fasthash::MetroHasher;
 use crate::math::{Vec3i, Box3i};
 use crate::schematic::ModelData;
+
+
+// label type used to analyze morphologic shapes
+type Label = u32;
 
 
 // indicate position of the model and model to use
@@ -17,23 +21,23 @@ pub struct Matrix<T> {
 
 // used by first pass of connected component labeling
 macro_rules! __associate {
-    ($matrix:ident, $partition:ident, $i:ident, $a:ident, $b:ident) => {
+    ($matrix:ident, $disjoint:ident, $i:ident, $a:ident, $b:ident) => {
         {
             let la = $matrix.data[$a];
             let lb = $matrix.data[$b];
             $matrix.data[$i] = min(la, lb);
-            $partition.union(la as usize, lb as usize);
+            $disjoint.link(la, lb);
         }
     };
 }
 
 
-impl<T> Matrix<T> {
-    pub fn new(size: Vec3i) -> Self {
+impl<T: Clone + Copy + Eq> Matrix<T> {
+    pub fn new(size: Vec3i, value: T) -> Self {
         // allocate a vector with the correct size
         let buffer_size = size.x * size.y * size.z;
         let mut buffer  = Vec::<T>::with_capacity(buffer_size);
-        buffer.resize(buffer_size, 0);
+        buffer.resize(buffer_size, value);
 
         Self {
             size: size,
@@ -47,13 +51,13 @@ impl<T> Matrix<T> {
     }
     
     #[inline]
-    pub fn get(&self, index: Vec3i) -> T {
-        self.data[self.index(index.x, index.y, index.z)]
+    pub fn get(&self, x: usize, y: usize, z: usize) -> T {
+        self.data[self.index(x, y, z)]
     }
 
     #[inline]
-    pub fn set(&mut self, index: Vec3i, value: T) {
-        let index = self.index(index.x, index.y, index.z);
+    pub fn set(&mut self, x: usize, y: usize, z: usize, value: T) {
+        let index = self.index(x, y, z);
         self.data[index] = value;
     }
 
@@ -80,11 +84,11 @@ impl<T> Matrix<T> {
     }
 
     // basic two pass implementation of the 6-connected component labeling algorithm
-    pub fn connected_component_labeling(&self) -> (Self<u32>, usize) {
+    pub fn connected_component_labeling(&self, empty: T) -> (Matrix<Label>, Label) {
         // prepare map of labels and set of union
-        let mut current   = 1;
-        let mut matrix    = Self::<u32>::new(self.size);
-        let mut partition = PartitionVec::<u32>::with_capacity(self.size.index_range() / 6);
+        let mut current  = 1;
+        let mut matrix   = Matrix::<Label>::new(self.size, 0);
+        let mut disjoint = DisjointHashSet::<Label>::new();
 
         /* FIRST PASS */
         // iterate over the whole matrix
@@ -93,7 +97,7 @@ impl<T> Matrix<T> {
             let v = self.data[i];
 
             // cells which value is null are simply empty
-            if v > 0 {
+            if v != empty {
                 // check for combinations using a bitmask
                 let mut mask = 0b000usize;
 
@@ -122,18 +126,18 @@ impl<T> Matrix<T> {
                         let ly = matrix.data[iy];
                         let lz = matrix.data[iz];
                         matrix.data[i] = min(lx, min(ly, lz));
-                        partition.union(lx as usize, ly as usize);
-                        partition.union(lx as usize, lz as usize);
+                        disjoint.link(lx, ly);
+                        disjoint.link(lx, lz);
                     },
-                    0b110 => __associate!(matrix, partition, i, iy, iz),
-                    0b101 => __associate!(matrix, partition, i, ix, iz),
-                    0b011 => __associate!(matrix, partition, i, ix, iy),
+                    0b110 => __associate!(matrix, disjoint, i, iy, iz),
+                    0b101 => __associate!(matrix, disjoint, i, ix, iz),
+                    0b011 => __associate!(matrix, disjoint, i, ix, iy),
                     0b100 => matrix.data[i] = matrix.data[iz],
                     0b010 => matrix.data[i] = matrix.data[iy],
                     0b001 => matrix.data[i] = matrix.data[ix],
                     0b000 => {
                         matrix.data[i] = current;
-                        partition.push(current);
+                        disjoint.insert(current);
                         current += 1;
                     },
                     _ => {}
@@ -144,115 +148,114 @@ impl<T> Matrix<T> {
         /* SECOND PASS */
         // convert the disjoint-set into a hashmap
         // to join labels into a single one
-        let mut map = HashMap::<u32, u32>::new();
-        let nb_labels = partition.amount_of_sets();
-        for i in 0..nb_labels {
-            let set = partition.set(i);
-            for (index, value) in set {
-                map.insert(*value, (index + 1) as u32);
-            }
+        let mut map = HashMap::<Label, Label>::new();
+        let mut label: Label = 1;
+        for set in disjoint.sets() {
+            for elem in set {map.insert(elem, label);}
+            label += 1;
         }
-
         // simply replace each label by the new jointed one
         for cell in matrix.data.iter_mut() {
             *cell = map[cell];
         }
-        return (matrix, nb_labels);
+        return (matrix, label);
     }
+}
 
-    // find the bounding for each label in the matrix
-    fn find_bounding_boxes(&self, nb_labels: usize) -> Vec<Box3i> {
-        // define a box for each label
-        let mut boxes = Vec::<Box3i>::with_capacity(nb_labels);
-        boxes.resize(nb_labels, Box3i::new(self.size, Vec3i::new(0, 0, 0)));
 
-        // find the smallest bounding box for each component of the matrix
-        self.for_each(&mut |x, y, z| {
-            let label = self.data[self.index(x, y, z)] as usize;
-            let curr  = Vec3i::new(x, y, z);
-            let abox  = boxes[label];
-            boxes[label] = Box3i::new(abox.begin.min(curr), abox.end.max(curr));
-        });
-        return boxes;
-    }
 
-    // generate signatures for a each component
-    fn generate_signature(&self, label: Value, abox: Box3i) -> u64 {
-        // prepare a bitvec to represent the morphological pattern
-        let mut bitvec = BitVec::from_elem(abox.size().index_range(), false);
+// find the bounding for each label in the matrix
+fn find_bounding_boxes(matrix: &Matrix<Label>, labels_amount: usize) -> Vec<Box3i> {
+    // define a box for each label
+    let mut boxes = Vec::<Box3i>::with_capacity(labels_amount);
+    boxes.resize(labels_amount, Box3i::new(matrix.size, Vec3i::new(0, 0, 0)));
 
-        // analyze the portion of the matrix to deduce a morphologic signature for the label
-        let mut index = 0;
-        self.for_each_in_box(abox, &mut |x, y, z| {
-            if label == self.data[self.index(x, y, z)] {
-                bitvec.set(index, true);
-            }
-            index += 1;
-        });
-        let mut hasher = MetroHasher::default();
-        bitvec.hash(&mut hasher);
-        hasher.finish()
-    }
+    // find the smallest bounding box for each component of the matrix
+    matrix.for_each(&mut |x, y, z| {
+        let label = matrix.get(x, y, z) as usize;
+        let curr  = Vec3i::new(x, y, z);
+        let abox  = boxes[label];
+        boxes[label] = Box3i::new(abox.begin.min(curr), abox.end.max(curr));
+    });
+    return boxes;
+}
 
-    // generate a box model for the component
-    fn generate_model(&self, label: Value, abox: Box3i) -> ModelData {
-        let mut boxes = Vec::<Box3i>::with_capacity(abox.size().sum());
 
-        // build boxes until all cells of the component are covered
-        self.for_each_in_box(abox, &mut |x, y, z| {
-            if label == self.data[self.index(x, y, z)] {
-                let begin = Vec3i::new(x, y, z);
+// generate signatures for a each component
+fn generate_signature(matrix: &Matrix<Label>, label: Label, abox: Box3i) -> u64 {
+    // prepare a bitvec to represent the morphological pattern
+    let mut bitvec = BitVec::from_elem(abox.size().index_range(), false);
 
-                // generate a new box if the cell is not already part of an other box
-                let mut to_add = true;
-                for bbox in boxes.iter() {
-                    if bbox.inside(begin) {
-                        to_add = false;
-                        break;
-                    }
-                }
+    // analyze the portion of the matrix to deduce a morphologic signature for the label
+    let mut index = 0usize;
+    matrix.for_each_in_box(abox, &mut |x, y, z| {
+        if label == matrix.get(x, y, z) {bitvec.set(index, true);}
+        index += 1;
+    });
+    let mut hasher = MetroHasher::default();
+    bitvec.hash(&mut hasher);
+    hasher.finish()
+}
 
-                // the box can be generated an added
-                if to_add {
-                    let end = self.group_box(label, begin, abox.end);
-                    boxes.push(Box3i::new(begin - abox.begin, end - abox.begin));
+
+// generate a box model for the component
+fn generate_model(matrix: &Matrix<Label>, label: Label, abox: Box3i) -> ModelData {
+    let mut boxes = Vec::<Box3i>::with_capacity(abox.size().sum());
+
+    // build boxes until all cells of the component are covered
+    matrix.for_each_in_box(abox, &mut |x, y, z| {
+        if label == matrix.get(x, y, z) {
+            let begin = Vec3i::new(x, y, z);
+
+            // generate a new box if the cell is not already part of an other box
+            let mut to_add = true;
+            for bbox in boxes.iter() {
+                if bbox.inside(begin) {
+                    to_add = false;
+                    break;
                 }
             }
-        });
-        boxes.shrink_to_fit();
-        return ModelData(boxes);
-    }
-
-    // find the end point of a new box to generate
-    fn group_box(&self, label: u32, from: Vec3i, to: Vec3i) -> Vec3i {
-        let mut end_point = to;
-        // group a line
-        'group_x: for x in (from.x + 1)..to.x {
-            if label != self.data[self.index(x, from.y, to.z)] {
-                end_point.x = x;
-                break 'group_x;
+            // the box can be generated an added
+            if to_add {
+                let end = group_box(matrix, label, begin, abox.end);
+                boxes.push(Box3i::new(begin - abox.begin, end - abox.begin));
             }
         }
-        // group a plane
-        'group_y: for y in (from.y + 1)..to.y {
+    });
+    boxes.shrink_to_fit();
+    return ModelData(boxes);
+}
+
+
+// find the end point of a new box to generate
+fn group_box(matrix: &Matrix<Label>, label: Label, from: Vec3i, to: Vec3i) -> Vec3i {
+    let mut end_point = to;
+    // group a line
+    'group_x: for x in (from.x + 1)..to.x {
+        if label != matrix.get(x, from.y, from.z) {
+            end_point.x = x;
+            break 'group_x;
+        }
+    }
+    // group a plane
+    'group_y: for y in (from.y + 1)..to.y {
+        for x in from.x..to.x {
+            if label != matrix.get(x, y, from.z) {
+                end_point.y = y;
+                break 'group_y;
+            }
+        }
+    }
+    // group a volume
+    'group_z: for z in (from.z + 1)..to.z {
+        for y in from.y..to.y {
             for x in from.x..to.x {
-                if label != self.data[self.index(x, y, from.z)] {
-                    end_point.y = y;
-                    break 'group_y;
+                if label != matrix.get(x, y, z) {
+                    end_point.z = z;
+                    break 'group_z;
                 }
             }
         }
-        // group a volume
-        'group_z: for z in (from.z + 1)..to.z {
-            for y in from.y..to.y {
-                for x in from.x..to.x {
-                    if label != self.data[self.index(x, y, z)] {
-                        end_point.z = z;
-                        break 'group_z;
-                    }
-                }
-            }
-        }
-        return end_point;
     }
+    return end_point;
 }

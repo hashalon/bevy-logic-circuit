@@ -19,7 +19,7 @@ fn main() {
 
     let schema = Schema::new();
 
-    let matrix = Matrix::new(Vec3i::new(12, 12, 12));
+    let matrix = Matrix::new(Vec3i::new(12, 12, 12), 0);
 
     match schema.verify() {
         Ok(_) => {
