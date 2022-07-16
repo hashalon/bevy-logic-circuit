@@ -61,4 +61,15 @@ impl<T: Clone + Copy + Eq> Matrix<T> {
             }
         }
     }
+
+    pub fn get_neighbors(&self, x: usize, y: usize, z: usize, out_of_bound: T) -> [T; 6] {
+        [
+            if x > 0               {self.get(x - 1, y, z)} else {out_of_bound},
+            if x < self.size.x - 1 {self.get(x + 1, y, z)} else {out_of_bound},
+            if y > 0               {self.get(x, y - 1, z)} else {out_of_bound},
+            if y < self.size.y - 1 {self.get(x, y + 1, z)} else {out_of_bound},
+            if z > 0               {self.get(x, y, z - 1)} else {out_of_bound},
+            if z < self.size.z - 1 {self.get(x, y, z + 1)} else {out_of_bound},
+        ]
+    }
 }
