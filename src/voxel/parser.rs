@@ -19,16 +19,19 @@ pub struct ComponentData<T: Clone> {
     label    : Label, 
     value    : T,
     position : Vec3i,
-    model    : Signature,
+    volume   : usize,
+    signature: Signature,
 }
 
 impl<T: Clone> ComponentData<T> {
-    pub fn new(label: Label, value: T, position: Vec3i, model: Signature) -> Self {
+    // make a new container of component data
+    pub fn new(label: Label, value: T, position: Vec3i, volume: usize, signature: Signature) -> Self {
         Self {
             label    : label,
             value    : value,
             position : position,
-            model    : model
+            volume   : volume,
+            signature: signature,
         }
     }
 
@@ -38,14 +41,16 @@ impl<T: Clone> ComponentData<T> {
             label    : 0,
             value    : empty,
             position : Vec3i::new(0, 0, 0),
-            model    : 0,
+            volume   : 0,
+            signature: 0,
         }
     }
 }
 
 
 // parse the matrix and deduce data that will be used to make a schematic
-pub fn parse_matrix<T: Clone + Copy + Eq>(matrix: &Matrix<T>, empty: T, threshold: usize) -> (Csr<Label, ()>, Vec<ComponentData<T>>, HashMap<Signature, ModelData>) {
+pub fn parse_matrix<T: Clone + Copy + Eq>(matrix: &Matrix<T>, empty: T, threshold: usize) 
+-> (Csr<Label, ()>, Vec<ComponentData<T>>, HashMap<Signature, ModelData>) {
     
     // generate a matrix with a label for each component
     let (labels_matrix, labels_mapping) = connected_component_labeling(matrix, empty);
@@ -65,18 +70,15 @@ pub fn parse_matrix<T: Clone + Copy + Eq>(matrix: &Matrix<T>, empty: T, threshol
     // for each label, generate corresponding component data
     for (index, abox) in boxes.iter().enumerate() {
         let label = (index + 1) as Label;
-
-        // TODO...
-        // analyze the type of component to deduce how it is connected to others
         let value = labels_mapping[&label];
 
         // find the morphological signature
-        let sign = generate_signature(&labels_matrix, label, *abox);
-        components[label as usize] = ComponentData::<T>::new(label, value, abox.begin, sign);
+        let (signature, volume) = generate_signature(&labels_matrix, label, *abox);
+        components[index] = ComponentData::<T>::new(label, value, abox.begin, volume, signature);
 
         // if the component has a new morphology, generate a model for it
-        if !models.contains_key(&sign) {
-            models.insert(sign, generate_model(&labels_matrix, label, *abox));
+        if !models.contains_key(&signature) {
+            models.insert(signature, generate_model(&labels_matrix, label, *abox));
         }
     }
     models.shrink_to_fit();
@@ -84,25 +86,27 @@ pub fn parse_matrix<T: Clone + Copy + Eq>(matrix: &Matrix<T>, empty: T, threshol
 }
 
 
-// used by first pass of connected component labeling
-macro_rules! __associate {
-    ($matrix:ident, $set:ident, $i:ident, $a:ident, $b:ident) => {
-        {
-            let la = $matrix.data[$a];
-            let lb = $matrix.data[$b];
-            $matrix.data[$i] = min(la, lb);
-            $set.link(la, lb);
-        }
-    };
-}
-
 // basic two pass implementation of the 6-connected component labeling algorithm
-fn connected_component_labeling<T: Clone + Copy + Eq>(matrix: &Matrix<T>, empty: T) -> (Matrix<Label>, HashMap<Label, T>) {
+fn connected_component_labeling<T: Clone + Copy + Eq>(matrix: &Matrix<T>, empty: T) 
+-> (Matrix<Label>, HashMap<Label, T>) {
+
     // prepare map of labels and set of union
     let mut current  = 1;
     let mut labels   = Matrix::<Label>::new(matrix.size, 0);
     let mut disjoint = DisjointHashSet::<Label>::new();
     let mut map_tmp  = HashMap::<Label, T>::with_capacity(matrix.size.index_range() / 6);
+
+    // macro to avoid repeating the same four instructions three times
+    macro_rules! associate {
+        ($matrix:ident, $set:ident, $i:ident, $a:ident, $b:ident) => {
+            {
+                let la = $matrix.data[$a];
+                let lb = $matrix.data[$b];
+                $matrix.data[$i] = min(la, lb);
+                $set.link(la, lb);
+            }
+        };
+    }
 
     /* FIRST PASS */
     // iterate over the whole matrix
@@ -143,9 +147,9 @@ fn connected_component_labeling<T: Clone + Copy + Eq>(matrix: &Matrix<T>, empty:
                     disjoint.link(lx, ly);
                     disjoint.link(lx, lz);
                 },
-                0b110 => __associate!(labels, disjoint, i, iy, iz),
-                0b101 => __associate!(labels, disjoint, i, ix, iz),
-                0b011 => __associate!(labels, disjoint, i, ix, iy),
+                0b110 => associate!(labels, disjoint, i, iy, iz),
+                0b101 => associate!(labels, disjoint, i, ix, iz),
+                0b011 => associate!(labels, disjoint, i, ix, iy),
                 0b100 => labels.data[i] = labels.data[iz],
                 0b010 => labels.data[i] = labels.data[iy],
                 0b001 => labels.data[i] = labels.data[ix],
@@ -204,20 +208,28 @@ fn find_bounding_boxes(matrix: &Matrix<Label>, labels_amount: usize) -> Vec<Box3
 
 
 // generate signatures for a each component
-fn generate_signature(matrix: &Matrix<Label>, label: Label, abox: Box3i) -> Signature {
+fn generate_signature(matrix: &Matrix<Label>, label: Label, abox: Box3i) -> (Signature, usize) {
     // prepare a bitvec to represent the morphological pattern
     let mut bitvec = BitVec::from_elem(abox.size().index_range(), false);
 
     // analyze the portion of the matrix to deduce a morphologic signature for the label
     let mut index = 0usize;
+    let mut count = 0usize;
     matrix.for_each_in_box(abox, &mut |x, y, z| {
-        if label == matrix.get(x, y, z) {bitvec.set(index, true);}
+        if label == matrix.get(x, y, z) {
+            bitvec.set(index, true);
+            count += 1;
+        }
         index += 1;
     });
+    
+    // generate the signature
     let mut hasher = MetroHasher::default();
     abox.size().hash(&mut hasher);
     bitvec.hash(&mut hasher);
-    hasher.finish()
+
+    // return the signature and the number of cells covered by the shape
+    return (hasher.finish(), count);
 }
 
 

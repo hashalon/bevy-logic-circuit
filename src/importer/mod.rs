@@ -1,16 +1,12 @@
+
+
+mod base;
+mod xraw;
+
+use base::*;
+use xraw::*;
+
 /*
-use bevy::prelude::*;
-
-mod voxel;
-mod loader_xraw;
-
-pub use voxel::{
-    Type,
-    Model,
-};
-pub use loader_xraw::load_xraw;
-
-
 
 // build a wire entity
 pub fn start_load_circuit(mut commands: Commands, server: Res<AssetServer>) {

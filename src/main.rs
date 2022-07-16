@@ -5,14 +5,14 @@ mod math;
 mod voxel;
 mod schematic;
 mod circuit;
-//mod importer;
+mod importer;
 
 
 use math::*;
 use voxel::*;
 use schematic::*;
 use circuit::*;
-//use importer::*;
+use importer::*;
 
 
 fn main() {
