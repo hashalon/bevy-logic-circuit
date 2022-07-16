@@ -7,7 +7,7 @@ use std::{ops, cmp::{min, max}};
 pub const NB_COORDS: usize = 3;
 pub type Vertex = [f32; NB_COORDS];
 
-#[derive(Clone, Copy, Serialize, Deserialize, Hash)]
+#[derive(Clone, Copy, Eq, Serialize, Deserialize, Hash)]
 pub struct Vec3i {
     pub x: usize,
     pub y: usize,
@@ -148,5 +148,12 @@ impl ops::Div for Vec3i {
             y: self.y / o.y,
             z: self.z / o.z,
         }
+    }
+}
+
+impl PartialEq for Vec3i {
+    #[inline]
+    fn eq(&self, o: &Self) -> bool {
+        self.x == o.x && self.y == o.y && self.z == o.z
     }
 }
