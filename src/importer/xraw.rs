@@ -1,24 +1,25 @@
-use std::{fs::File, path::Path, io::{BufRead, BufReader}};
+use std::{mem::size_of, fs::File, path::Path, io::{BufRead, BufReader}};
+use num::NumCast;
 use crate::math::Vec3i;
 use crate::voxel::Matrix;
 use crate::importer::*;
 
 // Voxel data
 #[derive(Clone, Copy, Eq)]
-pub struct Voxel([u32; 4]);
+pub struct Voxel<T>([T; 4]);
 
 
-impl Voxel {
-    fn new(r: u32, g: u32, b: u32, a: u32) -> Self {
+impl<T: Clone + Copy + Eq + NumCast> Voxel<T> {
+    fn new(r: T, g: T, b: T, a: T) -> Self {
         Self([r, g, b, a])
     }
 
-    fn void() -> Self {
-        Self([0, 0, 0, 0])
+    fn void(empty: T) -> Self {
+        Self([empty, empty, empty, empty])
     }
 }
 
-impl PartialEq for Voxel {
+impl<T: Eq> PartialEq for Voxel<T> {
     #[inline]
     fn eq(&self, o: &Self) -> bool {
         for i in 0..4 {
@@ -87,6 +88,7 @@ pub fn load_file<P: AsRef<Path>>(path: P) {
                 //file.read_to_end(&mut buffer);
 
                 let size = header.dimensions;
+                /*
                 match header.bits_per_index {
                     8  => {load_matrix(&buffer, size, 0u8      , 1, 1, &|buf, index, _| {buf[index]});},
                     16 => {load_matrix(&buffer, size, 0xffffu16, 2, 1, &|buf, index, _| {read_u16(buf, index)});},
@@ -96,72 +98,73 @@ pub fn load_file<P: AsRef<Path>>(path: P) {
                         load_matrix(&buffer, size, Voxel::void(), data_size, header.color_channels_amount, &func);
                     }
                 };
+                */
             }
         },
         Err(err) => {}
     }
 }
 
-pub fn generate_matrix_u8(buffer: &Vec<u8>, size: Vec3i) -> Matrix<u8> {
-    load_matrix(&buffer, size, 0u8, 1, 1, &|buf, index, _| {buf[index]})
-}
-
-pub fn generate_matrix_u16(buffer: &Vec<u8>, size: Vec3i) -> Matrix<u16> {
-    load_matrix(&buffer, size, 0xffffu16, 2, 1, &|buf, index, _| {read_u16(buf, index)})
-}
-
-pub fn generate_matrix_voxel(buffer: &Vec<u8>, size: Vec3i, color_channels_amount: usize, bits_per_channel: usize) -> Matrix<Voxel> {
-    load_matrix(&buffer, size, Voxel::void(), 
-    color_channels_amount * bits_per_channel / 8, 
-    color_channels_amount, &voxel_gen_func(bits_per_channel))
-}
-
-
-// load data into the buffer and convert it into a matrix
-fn load_matrix<T: Clone + Copy + Eq>(buffer: &[u8], size: Vec3i, empty: T, 
-    data_size: usize, data_elem: usize, func: &dyn Fn(&[u8], usize, usize) -> T) 
--> Matrix<T> {
-
-    let mut matrix = Matrix::<T>::new(size, empty);
+// load the matrix containing u8 indexes
+pub fn load_matrix_u8(buffer: &Vec<u8>, size: Vec3i) -> Matrix<u8> {
+    let mut matrix = Matrix::<u8>::new(size, 0u8);
     let mut index  = 0;
     for cell in matrix.data.iter_mut() {
-        *cell = func(buffer, index, data_elem);
-        index += data_size;
+        *cell = buffer[index];
+        index += 1;
     }
     return matrix;
 }
 
-
-// get a lambda function for reading the given type of voxel
-fn voxel_gen_func(data_type_size: usize) -> Box<dyn Fn(&[u8], usize, usize) -> Voxel> {
-    match data_type_size {
-        8 => {
-            Box::new(|buffer, index, nb_channels| {
-                let mut vox = Voxel::void();
-                for i in 0..nb_channels {
-                    vox.0[i] = buffer[index + i] as u32;
-                }
-                vox
-            })
-        },
-        16 => {
-            Box::new(|buffer, index, nb_channels| {
-                let mut vox = Voxel::void();
-                for i in 0..nb_channels {
-                    vox.0[i] = read_u16(buffer, index + i) as u32;
-                }
-                vox
-            })
-        },
-        32 => {
-            Box::new(|buffer, index, nb_channels| {
-                let mut vox = Voxel::void();
-                for i in 0..nb_channels {
-                    vox.0[i] = read_u32(buffer, index + i);
-                }
-                vox
-            })
-        },
-        _ => Box::new(|_, _, _| {Voxel::void()})
+// load the matrix containing u16 indexes
+pub fn load_matrix_u16(buffer: &Vec<u8>, size: Vec3i) -> Matrix<u16> {
+    let mut matrix = Matrix::<u16>::new(size, 0xffffu16);
+    let mut index  = 0;
+    for cell in matrix.data.iter_mut() {
+        *cell = read_u16(&buffer, index);
+        index += 2;
     }
+    return matrix;
+}
+
+// load the matrix of voxels
+pub fn load_matrix_voxel<T: Clone + Copy + Eq + NumCast>(
+    buffer: &Vec<u8>, size: Vec3i, empty: T, channels_amount: usize) 
+-> Matrix<Voxel<T>> {
+
+    let empty_voxel = Voxel::<T>::void(empty);
+    let mut matrix = Matrix::<Voxel<T>>::new(size, empty_voxel);
+
+    let mut index = 0;
+    match size_of::<T>() {
+        1 => {
+            for cell in matrix.data.iter_mut() {
+                *cell = empty_voxel;
+                for i in 0..channels_amount {
+                    (*cell).0[i] = T::from(buffer[index]).unwrap();
+                    index += 1;
+                }
+            }
+        },
+        2 => {
+            for cell in matrix.data.iter_mut() {
+                *cell = empty_voxel;
+                for i in 0..channels_amount {
+                    (*cell).0[i] = T::from(read_u16(&buffer, index)).unwrap();
+                    index += 2;
+                }
+            }
+        },
+        4 => {
+            for cell in matrix.data.iter_mut() {
+                *cell = empty_voxel;
+                for i in 0..channels_amount {
+                    (*cell).0[i] = T::from(read_u32(&buffer, index)).unwrap();
+                    index += 4;
+                }
+            }
+        },
+        _ => {}
+    }
+    return matrix;
 }
