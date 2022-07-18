@@ -3,7 +3,7 @@
  */
 use crate::circuit::BundleModel;
 use crate::math::*;
-use crate::schematic::Index;
+use crate::schematic::{Index, Vertex, ModelIndex};
 use bevy::{prelude::*, render::mesh::*};
 use serde::{Deserialize, Serialize};
 
@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize)]
 pub struct ModelAttr {
     pub position : Vec3i,
-    pub index    : Index,
+    pub index    : ModelIndex,
 }
 
 // the actual model representation
@@ -34,12 +34,15 @@ impl ModelData {
         let size = self.0.len();
 
         // build arrays to store model information
-        let mut vertexes = Vec::<Vertex>::with_capacity(size * PER_BOX_VERTEXES);
-        let mut indexes  = Vec::<u32   >::with_capacity(size * PER_BOX_INDEXES );
+        let mut indexes  = Vec::<Index >::with_capacity(size * INDEXES .len());
+        let mut vertexes = Vec::<Vertex>::with_capacity(size * VERTEXES.len());
+
+
 
         // add vertices and indices to the lists
         for abox in self.0.iter() {
-            add_to_model(&abox, &mut vertexes, &mut indexes);
+            let occluded = check_occlusions(abox, &self.0);
+            add_to_model(&abox, &occluded, &mut indexes, &mut vertexes);
         }
 
         let indices  = Indices::U32(indexes);
@@ -51,43 +54,64 @@ impl ModelData {
 }
 
 
-const PER_BOX_VERTEXES : usize = 8; // count vertexes
-const PER_BOX_INDEXES  : usize = 6 * 6; // count indexes
+// indicate if the given face is occluded or not
+// match the same order as the 'INDEXES' array
+type Occluded = [bool; 6];
 
-// template
-const VERTEXES: [Vec3i; PER_BOX_VERTEXES] = [
-    Vec3i::new(0, 0, 0), // front-bottom-left
-    Vec3i::new(1, 0, 0), // front-bottom-right
-    Vec3i::new(1, 1, 0), // front-top-right
-    Vec3i::new(0, 1, 0), // front-top-left
-    Vec3i::new(0, 0, 1), // back-bottom-left
-    Vec3i::new(1, 0, 1), // back-bottom-right
-    Vec3i::new(1, 1, 1), // back-top-right
-    Vec3i::new(0, 1, 1), // back-top-left
+
+// specify which face of the box is fully occluded
+fn check_occlusions(abox: &Box3i, boxes: &Vec<Box3i>) -> Occluded {
+    let mut occluded: Occluded = [false; 6];
+    for bbox in boxes {
+        // TODO check each face to see if they are occluded
+    }
+    return occluded;
+}
+
+
+const INDEXES: [[Index; 6]; 6] = [
+    [0, 3, 1, 1, 3, 2], // front
+    [5, 6, 4, 4, 6, 7], // back
+    [4, 7, 0, 0, 7, 3], // left
+    [1, 2, 5, 5, 2, 7], // right
+    [0, 4, 1, 1, 4, 5], // bottom
+    [3, 7, 2, 2, 7, 6], // top
 ];
 
-// template
-const INDEXES: [u32; PER_BOX_INDEXES] = [
-    0, 3, 1, 1, 3, 2, // front
-    5, 6, 4, 4, 6, 7, // back
-    4, 7, 0, 0, 7, 3, // left
-    1, 2, 5, 5, 2, 7, // right
-    0, 4, 1, 1, 4, 5, // bottom
-    3, 7, 2, 2, 7, 6, // top
+const VERTEXES: [Vertex; 8] = [
+    [0.0, 0.0, 0.0], // front-bottom-left
+    [1.0, 0.0, 0.0], // front-bottom-right
+    [1.0, 1.0, 0.0], // front-top-right
+    [0.0, 1.0, 0.0], // front-top-left
+    [0.0, 0.0, 1.0], // back-bottom-left
+    [1.0, 0.0, 1.0], // back-bottom-right
+    [1.0, 1.0, 1.0], // back-top-right
+    [0.0, 1.0, 1.0], // back-top-left
 ];
 
-
-fn add_to_model(abox: &Box3i, vertexes: &mut Vec<Vertex>, indexes: &mut Vec<u32>) {
+// add the box to the mesh model
+fn add_to_model(abox: &Box3i, occluded: &Occluded, indexes: &mut Vec<Index>, vertexes: &mut Vec<Vertex>) {
     // keep track of the new start index
     // before adding new vertexes
-    let start = vertexes.len() as u32;
-    for i in 0..PER_BOX_INDEXES {
-        indexes.push(start + INDEXES[i]);
+    let start = vertexes.len() as Index;
+
+    // add indexes if the face is not occluded
+    for i in 0..6 {
+        if !occluded[i] {
+            for index in INDEXES[i] {
+                indexes.push(start + index);
+            }
+        }
     }
 
     // add a point of the box to the model
-    for i in 0..PER_BOX_VERTEXES {
-        let vert = abox.begin + abox.size() * VERTEXES[i];
-        vertexes.push(vert.to_vertex());
+    for shift in VERTEXES {
+        let size  = abox.size();
+        let vertex: Vertex = [
+            size.x as f32 * shift[0] + abox.begin.x as f32,
+            size.y as f32 * shift[1] + abox.begin.y as f32,
+            size.z as f32 * shift[2] + abox.begin.z as f32,
+        ];
+        vertexes.push(vertex);
     }
 }
