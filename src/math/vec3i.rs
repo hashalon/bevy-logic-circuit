@@ -4,8 +4,6 @@
 use serde::{Deserialize, Serialize};
 use std::{ops, cmp::{min, max}};
 
-pub const NB_COORDS: usize = 3;
-pub type Vertex = [f32; NB_COORDS];
 
 #[derive(Clone, Copy, Eq, Serialize, Deserialize, Hash)]
 pub struct Vec3i {
@@ -26,10 +24,6 @@ impl Vec3i {
     #[inline]
     pub const fn sum(&self) -> usize {
         self.x + self.y + self.z
-    }
-    #[inline]
-    pub const fn to_vertex(&self) -> Vertex {
-        [self.x as f32, self.y as f32, self.z as f32]
     }
 
     #[inline]
