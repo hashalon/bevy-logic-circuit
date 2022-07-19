@@ -22,8 +22,8 @@ pub struct Schema {
 // error types when analyzing a schematic
 pub enum ErrorSchema {
     WireChannel(usize, Channel),
-    WireModel  (usize, Index),
-    ElemModel  (usize, Index),
+    WireModel  (usize, CompIndex),
+    ElemModel  (usize, CompIndex),
     ElemPinIn  (usize, usize),
     ElemPinOut (usize, usize),
 }

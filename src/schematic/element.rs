@@ -28,8 +28,8 @@ pub enum Type {
 #[derive(Serialize, Deserialize)]
 pub struct Element {
     pub type_elem  : Type,
-    pub pins_in    : Vec<Index>,
-    pub pins_out   : Vec<Index>,
+    pub pins_in    : Vec<CompIndex>,
+    pub pins_out   : Vec<CompIndex>,
     pub model_attr : ModelAttr,
 }
 
@@ -111,6 +111,6 @@ impl Element {
     }
 }
 
-fn convert_list(indexes: &Vec<Index>, entities: &Vec<Entity>) -> Vec<Entity> {
+fn convert_list(indexes: &Vec<CompIndex>, entities: &Vec<Entity>) -> Vec<Entity> {
     indexes.iter().map(|i| entities[*i as usize]).collect()
 }

@@ -37,11 +37,9 @@ impl ModelData {
         let mut indexes  = Vec::<Index >::with_capacity(size * INDEXES .len());
         let mut vertexes = Vec::<Vertex>::with_capacity(size * VERTEXES.len());
 
-
-
         // add vertices and indices to the lists
-        for abox in self.0.iter() {
-            let occluded = check_occlusions(abox, &self.0);
+        for (i, abox) in self.0.iter().enumerate() {
+            let occluded = check_occlusions(abox, i, &self.0);
             add_to_model(&abox, &occluded, &mut indexes, &mut vertexes);
         }
 
@@ -60,10 +58,31 @@ type Occluded = [bool; 6];
 
 
 // specify which face of the box is fully occluded
-fn check_occlusions(abox: &Box3i, boxes: &Vec<Box3i>) -> Occluded {
+fn check_occlusions(abox: &Box3i, index: usize, boxes: &Vec<Box3i>) -> Occluded {
     let mut occluded: Occluded = [false; 6];
-    for bbox in boxes {
-        // TODO check each face to see if they are occluded
+
+    // compute three other points
+    let point_x = Vec3i::new(abox.end  .x, abox.begin.y, abox.begin.z);
+    let point_y = Vec3i::new(abox.begin.x, abox.end  .y, abox.begin.z);
+    let point_z = Vec3i::new(abox.begin.x, abox.begin.y, abox.end  .z);
+
+    // for each box in the list, check if pair of points are inside
+    for (i, bbox) in boxes.iter().enumerate() {
+        if index == i {continue;} // skip current box
+
+        // check each point if they are inside of the box
+        let ix = bbox.contains(point_x);
+        let iy = bbox.contains(point_y);
+        let iz = bbox.contains(point_z);
+        let ie = bbox.contains(abox.end);
+
+        // use pair of points to deduce if face is occluded by box
+        if ix && iy {occluded[0] = true;}
+        if iz && ie {occluded[1] = true;}
+        if iy && iz {occluded[2] = true;}
+        if ix && ie {occluded[3] = true;}
+        if ix && iz {occluded[4] = true;}
+        if iy && ie {occluded[5] = true;}
     }
     return occluded;
 }

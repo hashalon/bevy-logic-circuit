@@ -2,7 +2,7 @@
  * represent a simple integer 3D vector
  */
 use serde::{Deserialize, Serialize};
-use std::{ops, cmp::{min, max}};
+use std::{ops, cmp};
 
 
 #[derive(Clone, Copy, Eq, Serialize, Deserialize, Hash)]
@@ -27,36 +27,19 @@ impl Vec3i {
     }
 
     #[inline]
-    pub const fn lesser(&self, o: Self) -> bool {
-        self.x < o.x && self.y < o.y && self.z < o.z
-    }
-    #[inline]
-    pub const fn greater(&self, o: Self) -> bool {
-        self.x > o.x && self.y > o.y && self.z > o.z
-    }
-    #[inline]
-    pub const fn lesser_equal(&self, o: Self) -> bool {
-        self.x <= o.x && self.y <= o.y && self.z <= o.z
-    }
-    #[inline]
-    pub const fn greater_equal(&self, o: Self) -> bool {
-        self.x >= o.x && self.y >= o.y && self.z >= o.z
-    }
-
-    #[inline]
     pub fn min(&self, o: Self) -> Self {
         Self {
-            x: min(self.x, o.x),
-            y: min(self.y, o.y),
-            z: min(self.z, o.z)
+            x: cmp::min(self.x, o.x),
+            y: cmp::min(self.y, o.y),
+            z: cmp::min(self.z, o.z)
         }
     }
     #[inline]
     pub fn max(&self, o: Self) -> Self {
         Self {
-            x: max(self.x, o.x),
-            y: max(self.y, o.y),
-            z: max(self.z, o.z)
+            x: cmp::max(self.x, o.x),
+            y: cmp::max(self.y, o.y),
+            z: cmp::max(self.z, o.z)
         }
     }
 }
@@ -149,5 +132,29 @@ impl PartialEq for Vec3i {
     #[inline]
     fn eq(&self, o: &Self) -> bool {
         self.x == o.x && self.y == o.y && self.z == o.z
+    }
+}
+
+
+impl PartialOrd for Vec3i {
+    #[inline]
+    fn partial_cmp(&self, _o: &Self) -> Option<cmp::Ordering> {
+        None
+    }
+    #[inline]
+    fn lt(&self, o: &Self) -> bool {
+        self.x < o.x && self.y < o.y && self.z < o.z
+    }
+    #[inline]
+    fn le(&self, o: &Self) -> bool {
+        self.x <= o.x && self.y <= o.y && self.z <= o.z
+    }
+    #[inline]
+    fn gt(&self, o: &Self) -> bool {
+        self.x > o.x && self.y > o.y && self.z > o.z
+    }
+    #[inline]
+    fn ge(&self, o: &Self) -> bool {
+        self.x >= o.x && self.y >= o.y && self.z >= o.z
     }
 }

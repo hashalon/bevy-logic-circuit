@@ -245,7 +245,7 @@ fn generate_model(matrix: &Matrix<Label>, label: Label, abox: Box3i) -> ModelDat
             // generate a new box if the cell is not already part of an other box
             let mut to_add = true;
             for bbox in boxes.iter() {
-                if bbox.inside(begin) {
+                if bbox.bounds(begin) {
                     to_add = false;
                     break;
                 }
