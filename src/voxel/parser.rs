@@ -34,12 +34,14 @@ impl<T: Clone> ComponentData<T> {
             signature: signature,
         }
     }
+}
 
-    // generate an empty component data
-    fn void(empty: T) -> Self {
+
+impl<T: Clone + Copy + Default> ComponentData<T> {
+    fn default() -> Self {
         Self {
             label    : 0,
-            value    : empty,
+            value    : T::default(),
             position : Vec3i::new(0, 0, 0),
             volume   : 0,
             signature: 0,
@@ -49,11 +51,11 @@ impl<T: Clone> ComponentData<T> {
 
 
 // parse the matrix and deduce data that will be used to make a schematic
-pub fn parse_matrix<T: Clone + Copy + Eq>(matrix: &Matrix<T>, empty: T, threshold: usize) 
+pub fn parse_matrix<T: Clone + Copy + Eq + Default>(matrix: &Matrix<T>, threshold: usize) 
 -> (Csr<Label, ()>, Vec<ComponentData<T>>, HashMap<Signature, ModelData>) {
     
     // generate a matrix with a label for each component
-    let (labels_matrix, labels_mapping) = connected_component_labeling(matrix, empty);
+    let (labels_matrix, labels_mapping) = connected_component_labeling(matrix);
     let labels_amount = labels_mapping.len();
 
     // find how components are connected togethers
@@ -64,7 +66,7 @@ pub fn parse_matrix<T: Clone + Copy + Eq>(matrix: &Matrix<T>, empty: T, threshol
 
     // build two lists with component data and model
     let mut components = Vec::<ComponentData<T>>::with_capacity(labels_amount);
-    components.resize(labels_amount, ComponentData::void(empty));
+    components.resize(labels_amount, ComponentData::default());
     let mut models = HashMap::<Signature, ModelData>::with_capacity(labels_amount);
 
     // for each label, generate corresponding component data
@@ -87,7 +89,7 @@ pub fn parse_matrix<T: Clone + Copy + Eq>(matrix: &Matrix<T>, empty: T, threshol
 
 
 // basic two pass implementation of the 6-connected component labeling algorithm
-fn connected_component_labeling<T: Clone + Copy + Eq>(matrix: &Matrix<T>, empty: T) 
+fn connected_component_labeling<T: Clone + Copy + Eq + Default>(matrix: &Matrix<T>) 
 -> (Matrix<Label>, HashMap<Label, T>) {
 
     // prepare map of labels and set of union
@@ -110,6 +112,7 @@ fn connected_component_labeling<T: Clone + Copy + Eq>(matrix: &Matrix<T>, empty:
 
     /* FIRST PASS */
     // iterate over the whole matrix
+    let empty = T::default();
     matrix.for_each(&mut |x, y, z| {
         let i = matrix.index(x, y, z);
         let v = matrix.data[i];

@@ -11,7 +11,7 @@ pub struct Matrix<T> {
 }
 
 
-impl<T: Clone + Copy + Eq> Matrix<T> {
+impl<T: Clone + Copy + Eq + Default> Matrix<T> {
     pub fn new(size: Vec3i, value: T) -> Self {
         // allocate a vector with the correct size
         let buffer_size = size.x * size.y * size.z;
