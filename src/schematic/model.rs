@@ -1,11 +1,18 @@
 /**
  * represent a model to load, build and to display in bevy
  */
-use crate::circuit::BundleModel;
-use crate::math::*;
-use crate::schematic::{Index, Vertex, ModelIndex};
 use bevy::{prelude::*, render::mesh::*};
 use serde::{Deserialize, Serialize};
+use crate::circuit::BundleModel;
+use crate::math::*;
+
+
+// define index for vertex
+pub type MeshIndex  = u32;
+pub type MeshVertex = [f32; 3];
+
+// define index for models
+pub type ModelIndex = u32;
 
 
 // indicate position of the model and model to use
@@ -34,8 +41,8 @@ impl ModelData {
         let size = self.0.len();
 
         // build arrays to store model information
-        let mut indexes  = Vec::<Index >::with_capacity(size * INDEXES .len());
-        let mut vertexes = Vec::<Vertex>::with_capacity(size * VERTEXES.len());
+        let mut indexes  = Vec::<MeshIndex >::with_capacity(size * INDEXES .len());
+        let mut vertexes = Vec::<MeshVertex>::with_capacity(size * VERTEXES.len());
 
         // add vertices and indices to the lists
         for (i, abox) in self.0.iter().enumerate() {
@@ -88,7 +95,7 @@ fn check_occlusions(abox: &Box3i, index: usize, boxes: &Vec<Box3i>) -> Occluded 
 }
 
 
-const INDEXES: [[Index; 6]; 6] = [
+const INDEXES: [[MeshIndex; 6]; 6] = [
     [0, 3, 1, 1, 3, 2], // front
     [5, 6, 4, 4, 6, 7], // back
     [4, 7, 0, 0, 7, 3], // left
@@ -97,7 +104,7 @@ const INDEXES: [[Index; 6]; 6] = [
     [3, 7, 2, 2, 7, 6], // top
 ];
 
-const VERTEXES: [Vertex; 8] = [
+const VERTEXES: [MeshVertex; 8] = [
     [0.0, 0.0, 0.0], // front-bottom-left
     [1.0, 0.0, 0.0], // front-bottom-right
     [1.0, 1.0, 0.0], // front-top-right
@@ -109,10 +116,15 @@ const VERTEXES: [Vertex; 8] = [
 ];
 
 // add the box to the mesh model
-fn add_to_model(abox: &Box3i, occluded: &Occluded, indexes: &mut Vec<Index>, vertexes: &mut Vec<Vertex>) {
+fn add_to_model(
+    abox    : &Box3i, 
+    occluded: &Occluded, 
+    indexes : &mut Vec<MeshIndex>, 
+    vertexes: &mut Vec<MeshVertex>) {
+    
     // keep track of the new start index
     // before adding new vertexes
-    let start = vertexes.len() as Index;
+    let start = vertexes.len() as MeshIndex;
 
     // add indexes if the face is not occluded
     for i in 0..6 {
@@ -126,7 +138,7 @@ fn add_to_model(abox: &Box3i, occluded: &Occluded, indexes: &mut Vec<Index>, ver
     // add a point of the box to the model
     for shift in VERTEXES {
         let size  = abox.size();
-        let vertex: Vertex = [
+        let vertex: MeshVertex = [
             size.x as f32 * shift[0] + abox.begin.x as f32,
             size.y as f32 * shift[1] + abox.begin.y as f32,
             size.z as f32 * shift[2] + abox.begin.z as f32,

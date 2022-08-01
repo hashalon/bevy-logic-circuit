@@ -2,14 +2,14 @@ use bevy::prelude::*;
 
 
 mod math;
-mod voxel;
+mod matrix;
 mod schematic;
 mod circuit;
 mod importer;
 
 
 use math::*;
-use voxel::*;
+use matrix::*;
 use schematic::*;
 use circuit::*;
 use importer::*;
@@ -28,7 +28,7 @@ fn main() {
         Err(errors) => {
             // there was error, it is not possible to build the circuit
             for error in errors.iter() {
-                println!("{}", error.message());
+                println!("{}", error.to_string());
             }
         }
     }

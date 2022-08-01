@@ -1,5 +1,6 @@
 use clap::Parser;
 use std::path::PathBuf;
+use crate::importer::*;
 
 /// Build voxel logic circuits to execute
 #[derive(Parser, Debug)]
@@ -19,11 +20,15 @@ fn parse_args() {
     let file_path = args.input_file;
 
     // test the file extension
-    let result = match file_path.extension() {
-        Some("blc") => Schema::load(file_path),
-        Some("vox") => Err(ErrorFile::Unknown),
-        Some("raw") => Err(ErrorFile::Unknown),
-        None        => Err(ErrorFile::Unknown),
+    let schema = match file_path.extension() {
+        Some("blc")  => {
+            Schema::load(file_path)
+        },
+        Some("xraw") => {
+            let matrix = xraw::load_file(file_path);
+        },
+        Some("vox")  => Err(ErrorFile::Unknown),
+        None         => Err(ErrorFile::Unknown),
     };
 
     let schema = match result {

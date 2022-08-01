@@ -1,21 +1,19 @@
 /**
  * represent a model to load, build and to display in bevy
  */
-use crate::circuit::{Channel, NB_CHANNELS};
-use crate::schematic::*;
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
-use std::io::{Read, Write, Error};
-use std::fs::File;
-use std::path::PathBuf;
+use std::{fs::File, path::Path, io::{Read, Write, Error}};
+use crate::circuit::{Channel, NB_CHANNELS};
+use crate::schematic::*;
 
 
 // indicate position of the model and model to use
 #[derive(Serialize, Deserialize)]
 pub struct Schema {
-    pub wires    : Vec<Wire>,
-    pub elements : Vec<Element>,
-    pub models   : Vec<ModelData>,
+    pub wires      : Vec<CompWire>,
+    pub components : Vec<CompData>,
+    pub models     : Vec<ModelData>,
 }
 
 
@@ -27,16 +25,15 @@ pub enum ErrorSchema {
     ElemPinIn  (usize, usize),
     ElemPinOut (usize, usize),
 }
-
-impl ErrorSchema {
-    pub fn message (&self) -> &str {
+impl ToString for ErrorSchema {
+    fn to_string (&self) -> String {
         match self {
             Self::WireChannel(id, chann) => "",
             Self::WireModel  (id, model) => "",
             Self::ElemModel  (id, model) => "",
             Self::ElemPinIn  (id, pin  ) => "",
             Self::ElemPinOut (id, pin  ) => "",
-        }
+        }.to_string()
     }
 }
 
@@ -50,17 +47,16 @@ pub enum ErrorFile {
     Serialize,
     Deserialize,
 }
-
-impl ErrorFile {
-    pub fn message (&self) -> &str {
+impl ToString for ErrorFile {
+    fn to_string (&self) -> String {
         match self {
             Self::Unknown     => "Could not identify file format",
-            Self::Open  (e)   => "Could not open input file.",
-            Self::Read  (e)   => "Could not read input file.",
-            Self::Write (e)   => "Could not write input file.",
+            Self::Open  (e)   => "Could not open input file",
+            Self::Read  (e)   => "Could not read input file",
+            Self::Write (e)   => "Could not write input file",
             Self::Serialize   => "Could not serialize input file",
             Self::Deserialize => "Could not deserialize input file",
-        }
+        }.to_string()
     }
 }
 
@@ -68,9 +64,9 @@ impl ErrorFile {
 impl Schema {
     pub fn new() -> Self {
         Self {
-            wires    : Vec::<Wire     >::new(),
-            elements : Vec::<Element  >::new(),
-            models   : Vec::<ModelData>::new(),
+            wires      : Vec::<CompWire >::new(),
+            components : Vec::<CompData >::new(),
+            models     : Vec::<ModelData>::new(),
         }
     }
 
@@ -94,7 +90,7 @@ impl Schema {
         }
 
         // check that all elements are valid
-        for (i, elem) in self.elements.iter().enumerate() {
+        for (i, elem) in self.components.iter().enumerate() {
             // check that associated model exists
             if elem.model_attr.index as usize >= nb_models {
                 errors.push(ErrorSchema::ElemModel(i, elem.model_attr.index));
@@ -121,11 +117,11 @@ impl Schema {
 
 
     // load a file to generate a valid schematic
-    pub fn load(file_path: PathBuf) -> Result<Self, ErrorFile> {
+    pub fn load<P: AsRef<Path>>(path: P) -> Result<Self, ErrorFile> {
 
         // try to open the file in read
-        let mut file = match File::open(file_path) {
-            Ok(f) => f,
+        let mut file = match File::open(path) {
+            Ok(f)  => f,
             Err(e) => return Err(ErrorFile::Open(e)),
         };
 
@@ -137,7 +133,7 @@ impl Schema {
 
         // generate the schematic from the file
         let schema = match bincode::deserialize::<Schema>(&buffer) {
-            Ok(s) => s,
+            Ok(s)  => s,
             Err(_) => return Err(ErrorFile::Deserialize),
         };
 
@@ -146,17 +142,17 @@ impl Schema {
     }
 
     // save to a file
-    pub fn save(&self, file_path: PathBuf) -> Result<(), ErrorFile> {
+    pub fn save<P: AsRef<Path>>(&self, path: P) -> Result<(), ErrorFile> {
 
         // try to open the file in write
-        let mut file = match File::create(file_path) {
-            Ok(f) => f,
+        let mut file = match File::create(path) {
+            Ok(f)  => f,
             Err(e) => return Err(ErrorFile::Open(e)),
         };
 
         // try to serialize the schematic
         let buffer: Vec<u8> = match bincode::serialize(&self){
-            Ok(b) => b,
+            Ok(b)  => b,
             Err(_) => return Err(ErrorFile::Serialize),
         };
 
@@ -181,7 +177,7 @@ pub fn build_circuit (mut commands: Commands, schema: Res<Schema>) {
     ).collect();
 
     // generate list of elements
-    for elem in schema.elements.iter() {
+    for elem in schema.components.iter() {
         /* TODO: could be used as soon as bevy support Bundle to be made into objects
         commands
         .spawn_bundle(elem.model_attr.bundle())
@@ -189,28 +185,33 @@ pub fn build_circuit (mut commands: Commands, schema: Res<Schema>) {
         // */
 
         // for now we have to implement a bundle fonction for each element type
-        match elem.type_elem {
-            Type::Constant(value) => {
+        match elem.comp_type {
+            CompType::Constant(value) => {
                 commands
                 .spawn_bundle (elem.model_attr.bundle())
                 .insert_bundle(elem.bundle_const(&wires, value));
             },
-            Type::Gate(op) => {
+            CompType::Gate(op) => {
                 commands
                 .spawn_bundle (elem.model_attr.bundle())
                 .insert_bundle(elem.bundle_gate(&wires, op));
             },
-            Type::Mux => {
+            CompType::Mux => {
                 commands
                 .spawn_bundle (elem.model_attr.bundle())
                 .insert_bundle(elem.bundle_mux(&wires));
             },
-            Type::Demux(value) => {
+            CompType::Demux(value) => {
                 commands
                 .spawn_bundle (elem.model_attr.bundle())
                 .insert_bundle(elem.bundle_demux(&wires, value));
             },
-            Type::Keyboard => {
+            CompType::Bus => {
+                commands
+                .spawn_bundle (elem.model_attr.bundle())
+                .insert_bundle(elem.bundle_bus(&wires));
+            }
+            CompType::Keyboard => {
                 commands
                 .spawn_bundle (elem.model_attr.bundle())
                 .insert_bundle(elem.bundle_keyboard(&wires));

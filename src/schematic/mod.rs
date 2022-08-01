@@ -3,13 +3,11 @@
  */
 
 
-mod base;
 mod model;
-mod element;
+mod component;
 mod schema;
 
 
-pub use base::*;
-pub use model::{ModelAttr, ModelData};
-pub use element::{Type, Element, Wire};
+pub use model::{ModelIndex, ModelAttr, ModelData};
+pub use component::{CompIndex, CompType, CompData, CompWire};
 pub use schema::*;

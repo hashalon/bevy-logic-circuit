@@ -3,7 +3,7 @@
 */
 
 use bevy::prelude::*;
-use bevy::input::{keyboard::KeyboardInput, ElementState};
+use bevy::input::{keyboard::KeyboardInput, ButtonState};
 use crate::circuit::base::*;
 
 
@@ -40,8 +40,8 @@ pub fn sys_reset(
 
         // add or remove a bit from the buffer
         match event.state {
-            ElementState::Pressed  => device.buffer[word] |= 1 << bit,
-            ElementState::Released => device.buffer[word] &= !(1 << bit),
+            ButtonState::Pressed  => device.buffer[word] |= 1 << bit,
+            ButtonState::Released => device.buffer[word] &= !(1 << bit),
         }
     }
 }
@@ -55,9 +55,11 @@ pub fn sys_tick(
 ) {
     for pins_out in comp_query.iter() {
 
-        // apply the data to each output pins based on their index
-        for id in pins_out.0.iter() {
+
+      // apply the data to each output pins based on their index
+       for id in pins_out.0.iter() {
             if let Ok((index, mut pin)) = next_query.get_mut(*id) {
+
                 pin.0 |= device.buffer[index.0 as usize];
             }
         }

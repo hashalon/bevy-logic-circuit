@@ -50,9 +50,9 @@ pub fn sys_tick(
         // compute the output value
         let mut data: Data = 0;
         match operator {
-            Operator::Or   => values.iter().for_each(|v| data |= *v),
-            Operator::And  => values.iter().for_each(|v| data &= *v),
-            Operator::Nor  => {
+            Operator::Or  => values.iter().for_each(|v| data |= *v),
+            Operator::And => values.iter().for_each(|v| data &= *v),
+            Operator::Nor => {
                 values.iter().for_each(|v| data |= *v);
                 data = !data;
             },
@@ -60,10 +60,10 @@ pub fn sys_tick(
                 values.iter().for_each(|v| data &= *v);
                 data = !data;
             },
-            Operator::Add  => values.iter().for_each(|v| data += *v),
-            Operator::Mul  => values.iter().for_each(|v| data *= *v),
-            Operator::Min  => values.iter().for_each(|v| data = min(data, *v)),
-            Operator::Max  => values.iter().for_each(|v| data = max(data, *v)),
+            Operator::Add => values.iter().for_each(|v| data += *v),
+            Operator::Mul => values.iter().for_each(|v| data *= *v),
+            Operator::Min => values.iter().for_each(|v| data = min(data, *v)),
+            Operator::Max => values.iter().for_each(|v| data = max(data, *v)),
         }
 
         // apply the value to all output wires

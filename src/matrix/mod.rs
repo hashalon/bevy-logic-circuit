@@ -5,7 +5,9 @@
 
 mod matrix;
 mod parser;
+mod converter;
 
 
 pub use matrix::*;
 pub use parser::*;
+pub use converter::*;

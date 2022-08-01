@@ -1,7 +1,7 @@
 use std::{mem::size_of, fs::File, path::Path, io::{Read, BufRead, BufReader}};
 use num::NumCast;
 use crate::math::Vec3i;
-use crate::voxel::Matrix;
+use crate::matrix::Matrix;
 use crate::importer::*;
 
 // Voxel data
@@ -52,29 +52,31 @@ pub struct XRawHeader {
 impl XRawHeader {
 
     // read only the header of the file
-    pub fn load<R: BufRead>(reader: &mut R) -> Result<Self, LoadError> {
+    pub fn load<R: BufRead>(reader: &mut R) -> Result<Self, ImportError> {
 
         // read the whole header into a buffer
         let mut buffer = [0u8; HEADER_SIZE];
-        match reader.read(&mut buffer) {
-            Ok(amount_bytes) => {
-                if amount_bytes == HEADER_SIZE {
-                    reader.consume(HEADER_SIZE);
-                    return Ok(Self {
-                        magic_number            : read_string(&buffer, 0, 4),
-                        color_channel_data_type : buffer[4] as usize,
-                        color_channels_amount   : buffer[5] as usize,
-                        bits_per_channel        : buffer[6] as usize,
-                        bits_per_index          : buffer[7] as usize,
-                        dimensions              : read_vec3i_from_u32s(&buffer, 8),
-                        palette_colors_amount   : read_u32(&buffer, 20) as usize,
-                    });
-                } else {
-                    return Err(LoadError::Insufficient(HEADER_SIZE, amount_bytes));
-                }
-            },
-            Err(err) => return Err(LoadError::ReadFile(err))
+        let amount = match reader.read(&mut buffer) {
+            Ok(a) => a,
+            Err(err) => return Err(ImportError::File(err))
+        };
+        
+        // check that the appropriate amount of bytes have been read
+        if amount != HEADER_SIZE {
+            return Err(ImportError::Header(HEADER_SIZE, amount));
         }
+        reader.consume(HEADER_SIZE);
+        
+        // return the header reaad from the file
+        Ok(Self {
+            magic_number            : read_string(&buffer, 0, 4),
+            color_channel_data_type : buffer[4] as usize,
+            color_channels_amount   : buffer[5] as usize,
+            bits_per_channel        : buffer[6] as usize,
+            bits_per_index          : buffer[7] as usize,
+            dimensions              : read_vec3i_from_u32s(&buffer, 8),
+            palette_colors_amount   : read_u32(&buffer, 20) as usize,
+        })
     }
 }
 
@@ -88,50 +90,50 @@ pub enum XRawMatrix {
     Vox32(Matrix<Voxel<u32>>),
 }
 
-// indicate the type of error encountered while trying to load a xraw file
-pub enum XRawLoadError {
-    ReadFile,
-    ReadHeader,
-    ReadContent,
-    ReadMatrix,
-}
+
 
 
 // load the file and get a matrix with the most suited type
-pub fn load_file<P: AsRef<Path>>(path: P) -> Result<XRawMatrix, XRawLoadError> {
-    match File::open(path) {
-        Ok(file) => {
-            let file_size = file.metadata().unwrap().len() as usize;
-
-            let mut reader = BufReader::new(file);
-            if let Ok(header) = XRawHeader::load(&mut reader) {
-                let mut buffer = Vec::<u8>::with_capacity(file_size);
-                if let Ok(_) = reader.read_to_end(&mut buffer) {
-                    match header.bits_per_index {
-                        8  => Ok(XRawMatrix::Ind8 (load_matrix_u8( &buffer, header.dimensions))),
-                        16 => Ok(XRawMatrix::Ind16(load_matrix_u16(&buffer, header.dimensions))),
-                        _  => {
-                            match header.bits_per_channel {
-                                8  => Ok(XRawMatrix::Vox8 (load_matrix_voxel::<u8 >(&buffer, header.dimensions, header.color_channels_amount))),
-                                16 => Ok(XRawMatrix::Vox16(load_matrix_voxel::<u16>(&buffer, header.dimensions, header.color_channels_amount))),
-                                32 => Ok(XRawMatrix::Vox32(load_matrix_voxel::<u32>(&buffer, header.dimensions, header.color_channels_amount))),
-                                _  => Err(XRawLoadError::ReadMatrix)
-                            }
-                        }
-                    }
-                } else {
-                    Err(XRawLoadError::ReadContent)
-                }
-            } else {
-                Err(XRawLoadError::ReadHeader)
+pub fn load_file<P: AsRef<Path>>(path: P) -> Result<XRawMatrix, ImportError> {
+    
+    // try to open the file in read
+    let file = match File::open(path) {
+        Ok(f)  => f,
+        Err(e) => {return Err(ImportError::File(e));}
+    };
+    let file_size = file.metadata().unwrap().len() as usize;
+    
+    // start by reading the header of the file
+    let mut reader = BufReader::new(file);
+    let header = match XRawHeader::load(&mut reader) {
+        Ok(r)  => r,
+        Err(e) => {return Err(e);}
+    };
+    
+    // read the whole content of the file
+    let mut buffer = Vec::<u8>::with_capacity(file_size);
+    match reader.read_to_end(&mut buffer) {
+        Ok(_)  => {},
+        Err(e) => {return Err(ImportError::Content);}
+    }
+    
+    // based on values read in the header, use the proper matrix and return the appropriate type
+    match header.bits_per_index {
+        8  => Ok(XRawMatrix::Ind8 (load_matrix_u8 (&buffer, header.dimensions))),
+        16 => Ok(XRawMatrix::Ind16(load_matrix_u16(&buffer, header.dimensions))),
+        _  => {
+            match header.bits_per_channel {
+                8  => Ok(XRawMatrix::Vox8 (load_matrix_voxel::<u8 >(&buffer, header.dimensions, header.color_channels_amount))),
+                16 => Ok(XRawMatrix::Vox16(load_matrix_voxel::<u16>(&buffer, header.dimensions, header.color_channels_amount))),
+                32 => Ok(XRawMatrix::Vox32(load_matrix_voxel::<u32>(&buffer, header.dimensions, header.color_channels_amount))),
+                _  => Err(ImportError::Matrix)
             }
-        },
-        Err(err) => {Err(XRawLoadError::ReadFile)}
+        }
     }
 }
 
 // load the matrix containing u8 indexes
-pub fn load_matrix_u8(buffer: &Vec<u8>, size: Vec3i) -> Matrix<u8> {
+fn load_matrix_u8(buffer: &Vec<u8>, size: Vec3i) -> Matrix<u8> {
     let mut matrix = Matrix::<u8>::new(size, 0u8);
     let mut index  = 0;
     for cell in matrix.data.iter_mut() {
@@ -142,7 +144,7 @@ pub fn load_matrix_u8(buffer: &Vec<u8>, size: Vec3i) -> Matrix<u8> {
 }
 
 // load the matrix containing u16 indexes
-pub fn load_matrix_u16(buffer: &Vec<u8>, size: Vec3i) -> Matrix<u16> {
+fn load_matrix_u16(buffer: &Vec<u8>, size: Vec3i) -> Matrix<u16> {
     let mut matrix = Matrix::<u16>::new(size, 0xffffu16);
     let mut index  = 0;
     for cell in matrix.data.iter_mut() {
@@ -153,7 +155,7 @@ pub fn load_matrix_u16(buffer: &Vec<u8>, size: Vec3i) -> Matrix<u16> {
 }
 
 // load the matrix of voxels
-pub fn load_matrix_voxel<T: Clone + Copy + Eq + NumCast + Default>(
+fn load_matrix_voxel<T: Clone + Copy + Eq + NumCast + Default>(
     buffer: &Vec<u8>, size: Vec3i, channels_amount: usize) 
 -> Matrix<Voxel<T>> {
 

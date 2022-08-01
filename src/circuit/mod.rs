@@ -9,6 +9,7 @@ mod wire;
 mod constant;
 mod gate;
 mod mux;
+mod bus;
 mod keyboard;
 
 // types to export
@@ -27,12 +28,8 @@ pub use base::{
 pub use wire::WireBundle;
 pub use constant::{Constant, BundleConst};
 pub use gate::{Operator, BundleGate};
-pub use mux::{
-    Mux,
-    Demux,
-    BundleMux,
-    BundleDemux,
-};
+pub use mux::{Mux, Demux, BundleMux, BundleDemux};
+pub use bus::{Bus, BundleBus};
 pub use keyboard::{
     KeyboardDevice,
     KeyboardConnector,
@@ -56,14 +53,15 @@ impl Plugin for CircuitPlugin {
         app
 
         // reset before next tick
-        .add_system(wire::sys_reset    .label(Label::Reset))
+        .add_system(wire::    sys_reset.label(Label::Reset))
         .add_system(keyboard::sys_reset.label(Label::Reset))
 
         // tick update
-        .add_system(constant::sys_tick .after(Label::Reset))
-        .add_system(gate::sys_tick     .after(Label::Reset))
-        .add_system(mux::sys_tick_mux  .after(Label::Reset))
-        .add_system(mux::sys_tick_demux.after(Label::Reset))
-        .add_system(keyboard::sys_tick .after(Label::Reset));
+        .add_system(constant:: sys_tick.after(Label::Reset))
+        .add_system(gate::     sys_tick.after(Label::Reset))
+        .add_system(mux::  mux_sys_tick.after(Label::Reset))
+        .add_system(mux::demux_sys_tick.after(Label::Reset))
+        .add_system(bus::      sys_tick.after(Label::Reset))
+        .add_system(keyboard:: sys_tick.after(Label::Reset));
     }
 }

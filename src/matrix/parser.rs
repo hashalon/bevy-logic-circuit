@@ -4,28 +4,29 @@ use petgraph::csr::Csr;
 use bit_vec::BitVec;
 use fasthash::MetroHasher;
 use crate::math::{Vec3i, Box3i};
-use crate::schematic::{Schema, ModelData};
-use crate::voxel::Matrix;
+use crate::schematic::ModelData;
+use crate::matrix::Matrix;
 
 
 // label type used to analyze morphologic shapes
 pub type Label     = u32;
 pub type Signature = u64;
-
+pub type FnEmpty<T> = dyn Fn(T) -> bool;
 
 // regroup the type of the component, its position and the model to use
 #[derive(Clone)]
-pub struct ComponentData<T: Clone> {
-    label    : Label, 
-    value    : T,
-    position : Vec3i,
-    volume   : usize,
-    signature: Signature,
+pub struct Element<T: Clone + Copy + Eq + Default> {
+    pub label    : Label, 
+    pub value    : T,
+    pub position : Vec3i,
+    pub volume   : usize,
+    pub signature: Signature,
 }
 
-impl<T: Clone> ComponentData<T> {
+impl<T: Clone + Copy + Eq + Default> Element<T> {
     // make a new container of component data
-    pub fn new(label: Label, value: T, position: Vec3i, volume: usize, signature: Signature) -> Self {
+    pub fn new(label: Label, value: T, position: Vec3i, volume: usize, signature: Signature) 
+    -> Self {
         Self {
             label    : label,
             value    : value,
@@ -37,7 +38,7 @@ impl<T: Clone> ComponentData<T> {
 }
 
 
-impl<T: Clone + Copy + Default> ComponentData<T> {
+impl<T: Clone + Copy + Eq + Default> Element<T> {
     fn default() -> Self {
         Self {
             label    : 0,
@@ -51,22 +52,23 @@ impl<T: Clone + Copy + Default> ComponentData<T> {
 
 
 // parse the matrix and deduce data that will be used to make a schematic
-pub fn parse_matrix<T: Clone + Copy + Eq + Default>(matrix: &Matrix<T>, threshold: usize) 
--> (Csr<Label, ()>, Vec<ComponentData<T>>, HashMap<Signature, ModelData>) {
+pub fn parse_matrix<T: Clone + Copy + Eq + Default>
+(matrix: &Matrix<T>, is_empty: &FnEmpty<T>, threshold: usize) 
+-> (Csr<Label, ()>, Vec<Element<T>>, HashMap<Signature, ModelData>) {
     
     // generate a matrix with a label for each component
-    let (labels_matrix, labels_mapping) = connected_component_labeling(matrix);
+    let (labels_matrix, labels_mapping) = connected_component_labeling(matrix, is_empty);
     let labels_amount = labels_mapping.len();
 
-    // find how components are connected togethers
+    // find how elements are connected togethers
     let graph = find_connections(&labels_matrix, labels_amount, threshold);
 
     // find the minimal bounding box of each component
     let boxes = find_bounding_boxes(&labels_matrix, labels_amount);
 
-    // build two lists with component data and model
-    let mut components = Vec::<ComponentData<T>>::with_capacity(labels_amount);
-    components.resize(labels_amount, ComponentData::default());
+    // build two lists with element data and model
+    let mut elements = Vec::<Element<T>>::with_capacity(labels_amount);
+    elements.resize(labels_amount, Element::default());
     let mut models = HashMap::<Signature, ModelData>::with_capacity(labels_amount);
 
     // for each label, generate corresponding component data
@@ -76,7 +78,7 @@ pub fn parse_matrix<T: Clone + Copy + Eq + Default>(matrix: &Matrix<T>, threshol
 
         // find the morphological signature
         let (signature, volume) = generate_signature(&labels_matrix, label, *abox);
-        components[index] = ComponentData::<T>::new(label, value, abox.begin, volume, signature);
+        elements[index] = Element::<T>::new(label, value, abox.begin, volume, signature);
 
         // if the component has a new morphology, generate a model for it
         if !models.contains_key(&signature) {
@@ -84,12 +86,13 @@ pub fn parse_matrix<T: Clone + Copy + Eq + Default>(matrix: &Matrix<T>, threshol
         }
     }
     models.shrink_to_fit();
-    return (graph, components, models);
+    return (graph, elements, models);
 }
 
 
 // basic two pass implementation of the 6-connected component labeling algorithm
-fn connected_component_labeling<T: Clone + Copy + Eq + Default>(matrix: &Matrix<T>) 
+fn connected_component_labeling<T: Clone + Copy + Eq + Default>
+(matrix: &Matrix<T>, is_empty: &FnEmpty<T>) 
 -> (Matrix<Label>, HashMap<Label, T>) {
 
     // prepare map of labels and set of union
@@ -112,13 +115,12 @@ fn connected_component_labeling<T: Clone + Copy + Eq + Default>(matrix: &Matrix<
 
     /* FIRST PASS */
     // iterate over the whole matrix
-    let empty = T::default();
     matrix.for_each(&mut |x, y, z| {
         let i = matrix.index(x, y, z);
         let v = matrix.data[i];
 
         // cells which value is null are simply empty
-        if v != empty {
+        if !is_empty(v) {
             // check for combinations using a bitmask
             let mut mask = 0b000usize;
 
@@ -300,7 +302,8 @@ fn group_box(matrix: &Matrix<Label>, label: Label, from: Vec3i, to: Vec3i) -> Ve
 
 
 // analyze the matrix to find connections between components
-fn find_connections(matrix: &Matrix<Label>, labels_amount: usize, threshold: usize) -> Csr<Label, ()> {
+fn find_connections(matrix: &Matrix<Label>, labels_amount: usize, threshold: usize) 
+-> Csr<Label, ()> {
 
     // prepare a graph with all the nodes
     let mut graph = Csr::<Label, ()>::new();

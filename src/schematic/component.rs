@@ -2,38 +2,42 @@
  * represent a model to load, build and to display in bevy
  */
 use bevy::prelude::*;
+use serde::{Deserialize, Serialize};
 use crate::schematic::*;
 use crate::circuit::*;
-use serde::{Deserialize, Serialize};
 
+
+// define index for components
+pub type CompIndex = u32;
 
 // a wire of the schematic
 #[derive(Serialize, Deserialize)]
-pub struct Wire {
+pub struct CompWire {
     pub channel    : Channel,
     pub model_attr : ModelAttr,
 }
 
 // the type of each element in the schematic
 #[derive(Serialize, Deserialize)]
-pub enum Type {
+pub enum CompType {
     Constant(Data),
     Gate(Operator),
     Mux,
     Demux(Data),
     Keyboard,
+    Bus,
 }
 
 // an element of the schematic
 #[derive(Serialize, Deserialize)]
-pub struct Element {
-    pub type_elem  : Type,
+pub struct CompData {
+    pub comp_type  : CompType,
     pub pins_in    : Vec<CompIndex>,
     pub pins_out   : Vec<CompIndex>,
     pub model_attr : ModelAttr,
 }
 
-impl Wire {
+impl CompWire {
     pub fn bundle(&self) -> WireBundle {
         WireBundle {
             index: PinChannel(self.channel),
@@ -43,7 +47,7 @@ impl Wire {
     }
 }
 
-impl Element {
+impl CompData {
     /* TODO: could be used as soon as bevy support Bundle to be made into objects
     pub fn bundle(&self, wires: &Vec<Entity>) -> dyn Bundle {
         let pins_in  = PinsIn (convert_list(&self.pins_in , wires));
@@ -99,6 +103,13 @@ impl Element {
     pub fn bundle_demux(&self, wires: &Vec<Entity>, value: Data) -> BundleDemux {
         BundleDemux {
             comp: Demux(value),
+            pins_in : PinsIn (convert_list(&self.pins_in , wires)),
+            pins_out: PinsOut(convert_list(&self.pins_out, wires)),
+        }
+    }
+    pub fn bundle_bus(&self, wires: &Vec<Entity>) -> BundleBus {
+        BundleBus {
+            comp: Bus {},
             pins_in : PinsIn (convert_list(&self.pins_in , wires)),
             pins_out: PinsOut(convert_list(&self.pins_out, wires)),
         }

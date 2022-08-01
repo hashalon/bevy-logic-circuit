@@ -1,10 +1,13 @@
 use std::{str::from_utf8, io};
 use crate::math::Vec3i;
 
-// define the various types of error we can encounter when loading a file
-pub enum LoadError {
-    ReadFile(io::Error),
-    Insufficient(usize, usize),
+
+// indicate the type of error encountered while trying to load a file
+pub enum ImportError {
+    File(io::Error),
+    Header(usize, usize),
+    Content,
+    Matrix,
 }
 
 
