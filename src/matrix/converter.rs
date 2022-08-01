@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use petgraph::{csr::Csr, visit::IntoNeighbors};
-use crate::circuit::Channel;
+use crate::circuit::*;
 use crate::schematic::*;
 use crate::matrix::*;
 
@@ -8,7 +8,12 @@ use crate::matrix::*;
 // define the type of element to build for a given value from the matrix
 pub enum ToBuild {
     Wire(Channel),
-    Comp(CompType),
+    Bus,
+    Mux,
+    Demux(Data),
+    Constant(Data),
+    Gate(Operator),
+    Keyboard,
     Empty,
 }
 
@@ -36,7 +41,7 @@ pub fn convert_matrix_to_schema<T: Clone + Copy + Eq + Default>
     }
 
     // generate the list of wires and other elements
-    let mut wire_list = Vec::<CompWire>::with_capacity(elements.len());
+    let mut wire_list = Vec::<WireData>::with_capacity(elements.len());
     let mut comp_list = Vec::<CompData>::with_capacity(elements.len());
     for element in elements.iter() {
 
@@ -46,27 +51,32 @@ pub fn convert_matrix_to_schema<T: Clone + Copy + Eq + Default>
             index: signatures[&element.signature],
         };
 
+        // find inputs and outputs
+        let pins_in : Vec<WireIndex> = rev_graph.neighbors(element.label).map(|v| v).collect();
+        let pins_out: Vec<WireIndex> = graph    .neighbors(element.label).map(|v| v).collect();
+
         // convert element into schematic component
         match convert(element.value, element.volume) {
             ToBuild::Wire(channel) => {
-                // build a new wire
-                wire_list.push(CompWire {
-                    channel: channel,
-                    model_attr: model_attr,
-                });
+                wire_list.push(WireData {channel, model_attr});
             },
-            ToBuild::Comp(comp_type) => {
-                // find inputs and outputs
-                let pins_in : Vec<CompIndex> = rev_graph.neighbors(element.label).map(|v| v).collect();
-                let pins_out: Vec<CompIndex> = graph    .neighbors(element.label).map(|v| v).collect();
-
-                // build a new component
-                comp_list.push(CompData{
-                    comp_type  : comp_type,
-                    pins_in    : pins_in,
-                    pins_out   : pins_out,
-                    model_attr : model_attr,
-                });
+            ToBuild::Bus => {
+                comp_list.push(CompData{pins_in, pins_out, model_attr, comp_type: CompType::Bus});
+            },
+            ToBuild::Mux => {
+                comp_list.push(CompData{pins_in, pins_out, model_attr, comp_type: CompType::Mux});
+            },
+            ToBuild::Demux(data) => {
+                comp_list.push(CompData{pins_in, pins_out, model_attr, comp_type: CompType::Demux(data)});
+            },
+            ToBuild::Constant(data) => {
+                comp_list.push(CompData{pins_in, pins_out, model_attr, comp_type: CompType::Constant(data)});
+            },
+            ToBuild::Gate(op) => {
+                comp_list.push(CompData{pins_in, pins_out, model_attr, comp_type: CompType::Gate(op)});
+            },
+            ToBuild::Keyboard => {
+                comp_list.push(CompData{pins_in, pins_out, model_attr, comp_type: CompType::Keyboard});
             },
             _ => {},
         }

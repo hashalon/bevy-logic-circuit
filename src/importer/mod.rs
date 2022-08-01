@@ -1,25 +1,12 @@
 
+// https://eisenwave.github.io/voxel-compression-docs/related/voxel_formats.html
 
 mod base;
 mod xraw;
+mod import;
 
 use base::*;
 use xraw::*;
+use import::*;
 
-/*
 
-// build a wire entity
-pub fn start_load_circuit(mut commands: Commands, server: Res<AssetServer>) {
-    let handle: Handle<> = server.load();
-
-    commands.insert_resource();
-
-    let entity = commands.spawn()
-        .insert_bundle(WireBundle {
-            index: PinIndex(0),
-            prev: DataPrevious(0),
-            next: DataNext(0),
-        });
-}
-
-*/

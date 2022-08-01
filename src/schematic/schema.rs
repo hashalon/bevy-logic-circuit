@@ -11,7 +11,7 @@ use crate::schematic::*;
 // indicate position of the model and model to use
 #[derive(Serialize, Deserialize)]
 pub struct Schema {
-    pub wires      : Vec<CompWire>,
+    pub wires      : Vec<WireData>,
     pub components : Vec<CompData>,
     pub models     : Vec<ModelData>,
 }
@@ -20,8 +20,8 @@ pub struct Schema {
 // error types when analyzing a schematic
 pub enum ErrorSchema {
     WireChannel(usize, Channel),
-    WireModel  (usize, CompIndex),
-    ElemModel  (usize, CompIndex),
+    WireModel  (usize, WireIndex),
+    ElemModel  (usize, WireIndex),
     ElemPinIn  (usize, usize),
     ElemPinOut (usize, usize),
 }
@@ -64,8 +64,8 @@ impl ToString for ErrorFile {
 impl Schema {
     pub fn new() -> Self {
         Self {
-            wires      : Vec::<CompWire >::new(),
-            components : Vec::<CompData >::new(),
+            wires      : Vec::<WireData>::new(),
+            components : Vec::<CompData>::new(),
             models     : Vec::<ModelData>::new(),
         }
     }
@@ -177,7 +177,7 @@ pub fn build_circuit (mut commands: Commands, schema: Res<Schema>) {
     ).collect();
 
     // generate list of elements
-    for elem in schema.components.iter() {
+    for comp in schema.components.iter() {
         /* TODO: could be used as soon as bevy support Bundle to be made into objects
         commands
         .spawn_bundle(elem.model_attr.bundle())
@@ -185,36 +185,36 @@ pub fn build_circuit (mut commands: Commands, schema: Res<Schema>) {
         // */
 
         // for now we have to implement a bundle fonction for each element type
-        match elem.comp_type {
-            CompType::Constant(value) => {
+        match comp.comp_type {
+            CompType::Bus => {
                 commands
-                .spawn_bundle (elem.model_attr.bundle())
-                .insert_bundle(elem.bundle_const(&wires, value));
-            },
-            CompType::Gate(op) => {
-                commands
-                .spawn_bundle (elem.model_attr.bundle())
-                .insert_bundle(elem.bundle_gate(&wires, op));
-            },
+                .spawn_bundle (comp.model_attr.bundle())
+                .insert_bundle(comp.bundle_bus(&wires));
+            }
             CompType::Mux => {
                 commands
-                .spawn_bundle (elem.model_attr.bundle())
-                .insert_bundle(elem.bundle_mux(&wires));
+                .spawn_bundle (comp.model_attr.bundle())
+                .insert_bundle(comp.bundle_mux(&wires));
             },
             CompType::Demux(value) => {
                 commands
-                .spawn_bundle (elem.model_attr.bundle())
-                .insert_bundle(elem.bundle_demux(&wires, value));
+                .spawn_bundle (comp.model_attr.bundle())
+                .insert_bundle(comp.bundle_demux(&wires, value));
             },
-            CompType::Bus => {
+            CompType::Constant(value) => {
                 commands
-                .spawn_bundle (elem.model_attr.bundle())
-                .insert_bundle(elem.bundle_bus(&wires));
-            }
+                .spawn_bundle (comp.model_attr.bundle())
+                .insert_bundle(comp.bundle_const(&wires, value));
+            },
+            CompType::Gate(op) => {
+                commands
+                .spawn_bundle (comp.model_attr.bundle())
+                .insert_bundle(comp.bundle_gate(&wires, op));
+            },
             CompType::Keyboard => {
                 commands
-                .spawn_bundle (elem.model_attr.bundle())
-                .insert_bundle(elem.bundle_keyboard(&wires));
+                .spawn_bundle (comp.model_attr.bundle())
+                .insert_bundle(comp.bundle_keyboard(&wires));
             },
         };
     }

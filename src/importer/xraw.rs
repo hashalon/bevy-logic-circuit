@@ -1,5 +1,5 @@
 use std::{mem::size_of, fs::File, path::Path, io::{Read, BufRead, BufReader}};
-use num::NumCast;
+use num::PrimInt;
 use crate::math::Vec3i;
 use crate::matrix::Matrix;
 use crate::importer::*;
@@ -8,19 +8,25 @@ use crate::importer::*;
 #[derive(Clone, Copy, Eq)]
 pub struct Voxel<T>([T; 4]);
 
-
-impl<T: Clone + Copy + Eq + NumCast> Voxel<T> {
+impl<T: Copy> Voxel<T> {
     fn new(r: T, g: T, b: T, a: T) -> Self {
         Self([r, g, b, a])
     }
-}
 
-impl<T: Clone + Copy + Eq + NumCast + Default> Default for Voxel<T> {
+    #[inline]
+    pub fn r(&self) -> T {self.0[0]}
+    #[inline]
+    pub fn g(&self) -> T {self.0[1]}
+    #[inline]
+    pub fn b(&self) -> T {self.0[2]}
+    #[inline]
+    pub fn a(&self) -> T {self.0[3]}
+}
+impl<T: Default> Default for Voxel<T> {
     fn default() -> Self {
         Self([T::default(), T::default(), T::default(), T::default()])
     }
 }
-
 impl<T: Eq> PartialEq for Voxel<T> {
     #[inline]
     fn eq(&self, o: &Self) -> bool {
@@ -31,11 +37,18 @@ impl<T: Eq> PartialEq for Voxel<T> {
     }
 }
 
+// define the type of data stored in each voxel
+pub enum VoxelType {
+    Cr    = 1,
+    Crg   = 2,
+    Crgb  = 3,
+    Crgba = 4,
+}
+
 
 // read the header of the file before reading the content itself
 // https://twitter.com/ephtracy/status/653721698328551424/photo/1
 const HEADER_SIZE: usize = 24;
-
 
 // specify the format of xraw file header
 pub struct XRawHeader {
@@ -85,16 +98,13 @@ impl XRawHeader {
 pub enum XRawMatrix {
     Ind8 (Matrix<u8 >),
     Ind16(Matrix<u16>),
-    Vox8 (Matrix<Voxel<u8 >>),
-    Vox16(Matrix<Voxel<u16>>),
-    Vox32(Matrix<Voxel<u32>>),
+    Vox8 (Matrix<Voxel<u8 >>, VoxelType),
+    Vox16(Matrix<Voxel<u16>>, VoxelType),
+    Vox32(Matrix<Voxel<u32>>, VoxelType),
 }
 
-
-
-
 // load the file and get a matrix with the most suited type
-pub fn load_file<P: AsRef<Path>>(path: P) -> Result<XRawMatrix, ImportError> {
+pub fn load_xraw_as_matrix<P: AsRef<Path>>(path: P) -> Result<XRawMatrix, ImportError> {
     
     // try to open the file in read
     let file = match File::open(path) {
@@ -122,10 +132,11 @@ pub fn load_file<P: AsRef<Path>>(path: P) -> Result<XRawMatrix, ImportError> {
         8  => Ok(XRawMatrix::Ind8 (load_matrix_u8 (&buffer, header.dimensions))),
         16 => Ok(XRawMatrix::Ind16(load_matrix_u16(&buffer, header.dimensions))),
         _  => {
+            let voxel_type = get_voxel_type(header.color_channels_amount);
             match header.bits_per_channel {
-                8  => Ok(XRawMatrix::Vox8 (load_matrix_voxel::<u8 >(&buffer, header.dimensions, header.color_channels_amount))),
-                16 => Ok(XRawMatrix::Vox16(load_matrix_voxel::<u16>(&buffer, header.dimensions, header.color_channels_amount))),
-                32 => Ok(XRawMatrix::Vox32(load_matrix_voxel::<u32>(&buffer, header.dimensions, header.color_channels_amount))),
+                8  => Ok(XRawMatrix::Vox8 (load_matrix_voxel::<u8 >(&buffer, header.dimensions, header.color_channels_amount), voxel_type)),
+                16 => Ok(XRawMatrix::Vox16(load_matrix_voxel::<u16>(&buffer, header.dimensions, header.color_channels_amount), voxel_type)),
+                32 => Ok(XRawMatrix::Vox32(load_matrix_voxel::<u32>(&buffer, header.dimensions, header.color_channels_amount), voxel_type)),
                 _  => Err(ImportError::Matrix)
             }
         }
@@ -155,8 +166,8 @@ fn load_matrix_u16(buffer: &Vec<u8>, size: Vec3i) -> Matrix<u16> {
 }
 
 // load the matrix of voxels
-fn load_matrix_voxel<T: Clone + Copy + Eq + NumCast + Default>(
-    buffer: &Vec<u8>, size: Vec3i, channels_amount: usize) 
+fn load_matrix_voxel<T: Clone + Copy + PrimInt + Default>
+(buffer: &Vec<u8>, size: Vec3i, channels_amount: usize) 
 -> Matrix<Voxel<T>> {
 
     let empty = Voxel::default();
@@ -194,4 +205,16 @@ fn load_matrix_voxel<T: Clone + Copy + Eq + NumCast + Default>(
         _ => {}
     }
     return matrix;
+}
+
+
+// return the voxel type based on the amount of channels
+fn get_voxel_type(channels_amount: usize) -> VoxelType {
+    match channels_amount {
+        1 => VoxelType::Cr,
+        2 => VoxelType::Crg,
+        3 => VoxelType::Crgb,
+        4 => VoxelType::Crgba,
+        _ => VoxelType::Crgba,
+    }
 }

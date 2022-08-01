@@ -8,6 +8,7 @@ pub enum ImportError {
     Header(usize, usize),
     Content,
     Matrix,
+    Schema,
 }
 
 

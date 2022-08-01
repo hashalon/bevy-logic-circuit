@@ -26,6 +26,7 @@ fn parse_args() {
         },
         Some("xraw") => {
             let matrix = xraw::load_file(file_path);
+            
         },
         Some("vox")  => Err(ErrorFile::Unknown),
         None         => Err(ErrorFile::Unknown),

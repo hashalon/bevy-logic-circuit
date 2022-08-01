@@ -9,5 +9,5 @@ mod schema;
 
 
 pub use model::{ModelIndex, ModelAttr, ModelData};
-pub use component::{CompIndex, CompType, CompData, CompWire};
+pub use component::{WireIndex, CompType, CompData, WireData};
 pub use schema::*;
