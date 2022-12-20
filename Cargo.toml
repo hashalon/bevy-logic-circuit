@@ -5,9 +5,17 @@ edition = "2021"
 license = "Proprietary"
 authors = ["Olivier Schyns"]
 
+
+[profile.dev]
+opt-level = 1
+
+[profile.dev.package."*"]
+opt-level = 3
+
+
 [dependencies]
 # bevy framework
-bevy  = {version="0.8", features=["dynamic"]}
+#bevy  = {version="0.8", features=["dynamic"]}
 clap  = {version="3.2", features=["derive"]}
 serde = {version="1.0", features=["derive"]}
 
@@ -20,3 +28,5 @@ petgraph = "0.6"
 bit-vec  = "0.6"
 fasthash = "0.4"
 
+
+bevy = "0.9"

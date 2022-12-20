@@ -32,7 +32,7 @@ pub struct BundleDemux {
 
 
 // combine multiple input values as boolean into a single wire
-pub fn mux_sys_tick(
+pub fn sys_tick_mux(
     comp_query: Query<(&PinsIn, &PinsOut), With<Mux>>,
     prev_query: Query<(&PinChannel, &DataPrevious)>,
     mut next_query: Query<&mut DataNext>
@@ -57,7 +57,7 @@ pub fn mux_sys_tick(
 }
 
 // split an input value into multiple boolean output
-pub fn demux_sys_tick(
+pub fn sys_tick_demux(
     comp_query: Query<(&Demux, &PinsIn, &PinsOut)>,
     prev_query: Query<&DataPrevious>,
     mut next_query: Query<(&PinChannel, &mut DataNext)>

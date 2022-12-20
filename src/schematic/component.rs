@@ -22,9 +22,9 @@ pub struct WireData {
 pub enum CompType {
     Bus,
     Mux,
-    Demux(Data),
-    Constant(Data),
-    Gate(Operator),
+    Demux    (Data),
+    Constant (Data),
+    Gate     (Operator),
     Keyboard,
 }
 
@@ -40,9 +40,9 @@ pub struct CompData {
 impl WireData {
     pub fn bundle(&self) -> WireBundle {
         WireBundle {
-            index: PinChannel(self.channel),
-            prev : DataPrevious(0),
-            next : DataNext    (0)
+            index: PinChannel   (self.channel),
+            prev : DataPrevious (0),
+            next : DataNext     (0)
         }
     }
 }
@@ -50,81 +50,83 @@ impl WireData {
 impl CompData {
     /* TODO: could be used as soon as bevy support Bundle to be made into objects
     pub fn bundle(&self, wires: &Vec<Entity>) -> Box<&dyn Bundle> {
-        let pins_in  = PinsIn (convert_list(&self.pins_in , wires));
-        let pins_out = PinsOut(convert_list(&self.pins_out, wires));
+        let pins_in  = PinsIn  (convert_list(&self.pins_in , wires));
+        let pins_out = PinsOut (convert_list(&self.pins_out, wires));
 
         match self.comp_type {
-            CompType::Bus => Box::new(move BundleBus {
+            CompType::Bus => Box::new(&BundleBus {
                 comp: Bus {},
                 pins_in ,
                 pins_out,
             }),
-            CompType::Mux => Box::new(move BundleMux {
+            CompType::Mux => Box::new(&BundleMux {
                 comp: Mux {},
                 pins_in ,
                 pins_out,
             }),
-            CompType::Demux(value) => Box::new(move BundleDemux {
-                comp: Demux(value),
+            CompType::Demux (value) => Box::new(&BundleDemux {
+                comp: Demux (value),
                 pins_in ,
                 pins_out,
             }),
-            CompType::Constant(value) => Box::new(move BundleConst {
-                comp: Constant(value),
+            CompType::Constant (value) => Box::new(&BundleConst {
+                comp: Constant (value),
                 pins_out,
             }),
-            CompType::Gate(op) => Box::new(move BundleGate {
+            CompType::Gate (op) => Box::new(&BundleGate {
                 operator: op,
                 pins_in ,
                 pins_out,
             }),
-            CompType::Keyboard => Box::new(move BundleKeyboard {
+            CompType::Keyboard => Box::new(&BundleKeyboard {
                 comp: KeyboardConnector {},
                 pins_out,
             }),
         }
     } // */
 
+    //*
     pub fn bundle_bus(&self, wires: &Vec<Entity>) -> BundleBus {
         BundleBus {
             comp: Bus {},
-            pins_in : PinsIn (convert_list(&self.pins_in , wires)),
-            pins_out: PinsOut(convert_list(&self.pins_out, wires)),
+            pins_in : PinsIn  (convert_list(&self.pins_in , wires)),
+            pins_out: PinsOut (convert_list(&self.pins_out, wires)),
         }
     }
     pub fn bundle_mux(&self, wires: &Vec<Entity>) -> BundleMux {
         BundleMux {
             comp: Mux {},
-            pins_in : PinsIn (convert_list(&self.pins_in , wires)),
-            pins_out: PinsOut(convert_list(&self.pins_out, wires)),
+            pins_in : PinsIn  (convert_list(&self.pins_in , wires)),
+            pins_out: PinsOut (convert_list(&self.pins_out, wires)),
         }
     }
     pub fn bundle_demux(&self, wires: &Vec<Entity>, value: Data) -> BundleDemux {
         BundleDemux {
-            comp: Demux(value),
-            pins_in : PinsIn (convert_list(&self.pins_in , wires)),
-            pins_out: PinsOut(convert_list(&self.pins_out, wires)),
+            comp: Demux (value),
+            pins_in : PinsIn  (convert_list(&self.pins_in , wires)),
+            pins_out: PinsOut (convert_list(&self.pins_out, wires)),
         }
     }
     pub fn bundle_const(&self, wires: &Vec<Entity>, value: Data) -> BundleConst {
         BundleConst {
-            comp: Constant(value),
-            pins_out: PinsOut(convert_list(&self.pins_out, wires)),
+            comp: Constant (value),
+            pins_out: PinsOut (convert_list(&self.pins_out, wires)),
         }
     }
     pub fn bundle_gate(&self, wires: &Vec<Entity>, op: Operator) -> BundleGate {
         BundleGate {
             operator: op,
-            pins_in : PinsIn (convert_list(&self.pins_in , wires)),
-            pins_out: PinsOut(convert_list(&self.pins_out, wires)),
+            pins_in : PinsIn  (convert_list(&self.pins_in , wires)),
+            pins_out: PinsOut (convert_list(&self.pins_out, wires)),
         }
     }
     pub fn bundle_keyboard(&self, wires: &Vec<Entity>) -> BundleKeyboard {
         BundleKeyboard {
             comp: KeyboardConnector {},
-            pins_out: PinsOut(convert_list(&self.pins_out, wires)),
+            pins_out: PinsOut (convert_list(&self.pins_out, wires)),
         }
     }
+    // */
 }
 
 fn convert_list(indexes: &Vec<WireIndex>, entities: &Vec<Entity>) -> Vec<Entity> {

@@ -8,9 +8,16 @@ use crate::circuit::base::*;
 
 
 // pool keyboard inputs and convert it into a data buffer
-#[derive(Component)]
-pub struct KeyboardDevice {
+#[derive(Resource)]
+pub struct KeyboardBuffer {
     buffer: [Data; NB_CHANNELS],
+}
+
+// build a default buffer for keyboard inputs
+impl Default for KeyboardBuffer {
+    fn default() -> Self {
+        Self { buffer: Default::default() }
+    }
 }
 
 // allow to input keyboard inputs into the circuit
@@ -29,7 +36,7 @@ pub struct BundleKeyboard {
 // apply computed buffer to output pins
 pub fn sys_reset(
     mut events: EventReader<KeyboardInput>,
-    mut device: ResMut<KeyboardDevice>,
+    mut device: ResMut<KeyboardBuffer>,
 ) {
     for event in events.iter() {
 
@@ -49,7 +56,7 @@ pub fn sys_reset(
 
 // apply computed buffer to output pins
 pub fn sys_tick(
-    device: Res<KeyboardDevice>,
+    device: Res<KeyboardBuffer>,
     comp_query: Query<&PinsOut, With<KeyboardConnector>>,
     mut next_query: Query<(&PinChannel, &mut DataNext)>
 ) {

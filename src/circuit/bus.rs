@@ -31,15 +31,15 @@ pub fn sys_tick(
 
         // write input pins data to stdout
         for id in pins_in.0.iter() {
-            if let Ok((index, pin)) = prev_query.get(*id) {
-                
+            if let Ok((_index, _pin)) = prev_query.get(*id) {
+                // TODO
             }
         }
 
         // read stdin data and write it to output wires
         for id in pins_out.0.iter() {
-            if let Ok((index, mut pin)) = next_query.get_mut(*id) {
-                
+            if let Ok((_index, mut _pin)) = next_query.get_mut(*id) {
+                // TODO
             }
         }
     }
