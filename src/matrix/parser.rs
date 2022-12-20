@@ -238,6 +238,7 @@ fn generate_signature(matrix: &Matrix<Label>, label: Label, abox: Box3i) -> (Sig
 }
 
 
+// TODO: remove this part and replace by simple matrix to be used with "block-mesh"
 // generate a box model for the component
 fn generate_model(matrix: &Matrix<Label>, label: Label, abox: Box3i) -> ModelData {
     let mut boxes = Vec::<Box3i>::with_capacity(abox.size().sum());

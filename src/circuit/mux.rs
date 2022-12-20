@@ -16,7 +16,7 @@ pub struct Demux(pub Data);
 
 // mux entity
 #[derive(Bundle)]
-pub struct BundleMux {
+pub struct MuxBundle {
     pub comp: Mux,
     pub pins_in : PinsIn,
     pub pins_out: PinsOut,
@@ -24,7 +24,7 @@ pub struct BundleMux {
 
 // mux entity
 #[derive(Bundle)]
-pub struct BundleDemux {
+pub struct DemuxBundle {
     pub comp: Demux,
     pub pins_in : PinsIn,
     pub pins_out: PinsOut,

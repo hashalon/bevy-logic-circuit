@@ -7,20 +7,20 @@ use crate::circuit::base::*;
 
 // constant input value
 #[derive(Component)]
-pub struct Constant(pub Data);
+pub struct Fixed(pub Data);
 
 
 // constant entity
 #[derive(Bundle)]
-pub struct BundleConst {
-    pub comp: Constant,
+pub struct FixedBundle {
+    pub comp: Fixed,
     pub pins_out: PinsOut,
 }
 
 
 // simply apply the constant
 pub fn sys_tick(
-    comp_query: Query<(&Constant, &PinsOut)>,
+    comp_query: Query<(&Fixed, &PinsOut)>,
     mut next_query: Query<&mut DataNext>
 ) {
     for (constant, pins_out) in comp_query.iter() {

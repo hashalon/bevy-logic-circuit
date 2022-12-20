@@ -24,8 +24,8 @@ pub enum Operator {
 
 // constant entity
 #[derive(Bundle)]
-pub struct BundleGate {
-    pub operator: Operator,
+pub struct GateBundle {
+    pub comp    : Operator,
     pub pins_in : PinsIn,
     pub pins_out: PinsOut,
 }

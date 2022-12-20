@@ -3,18 +3,18 @@
 */
 
 use bevy::prelude::*;
-use bevy::input::{keyboard::KeyboardInput, ButtonState};
+use bevy::input::{keyboard, ButtonState};
 use crate::circuit::base::*;
 
 
 // pool keyboard inputs and convert it into a data buffer
 #[derive(Resource)]
-pub struct KeyboardBuffer {
+pub struct DataBuffer {
     buffer: [Data; NB_CHANNELS],
 }
 
 // build a default buffer for keyboard inputs
-impl Default for KeyboardBuffer {
+impl Default for DataBuffer {
     fn default() -> Self {
         Self { buffer: Default::default() }
     }
@@ -22,21 +22,21 @@ impl Default for KeyboardBuffer {
 
 // allow to input keyboard inputs into the circuit
 #[derive(Component)]
-pub struct KeyboardConnector;
+pub struct Connector;
 
 
 // constant entity
 #[derive(Bundle)]
-pub struct BundleKeyboard {
-    pub comp: KeyboardConnector,
+pub struct InputBundle {
+    pub comp: Connector,
     pub pins_out: PinsOut,
 }
 
 
 // apply computed buffer to output pins
 pub fn sys_reset(
-    mut events: EventReader<KeyboardInput>,
-    mut device: ResMut<KeyboardBuffer>,
+    mut events: EventReader<keyboard::KeyboardInput>,
+    mut device: ResMut<DataBuffer>,
 ) {
     for event in events.iter() {
 
@@ -56,8 +56,8 @@ pub fn sys_reset(
 
 // apply computed buffer to output pins
 pub fn sys_tick(
-    device: Res<KeyboardBuffer>,
-    comp_query: Query<&PinsOut, With<KeyboardConnector>>,
+    device: Res<DataBuffer>,
+    comp_query: Query<&PinsOut, With<Connector>>,
     mut next_query: Query<(&PinChannel, &mut DataNext)>
 ) {
     for pins_out in comp_query.iter() {

@@ -151,8 +151,7 @@ pub fn build_circuit (mut commands: Commands, schema: Res<Schema>) {
     // generate list of wires
     let wires: Vec<Entity> = schema.wires.iter().map(|wire|
         commands
-        .spawn(wire.model_attr.bundle())
-        .insert(wire.bundle()).id()
+        .spawn(wire.bundle()).id()
     ).collect();
 
     // generate list of elements
@@ -167,33 +166,27 @@ pub fn build_circuit (mut commands: Commands, schema: Res<Schema>) {
         match comp.comp_type {
             CompType::Bus => {
                 commands
-                .spawn(comp.model_attr.bundle())
-                .insert(comp.bundle_bus(&wires));
+                .spawn(comp.bundle_bus(&wires));
             }
             CompType::Mux => {
                 commands
-                .spawn(comp.model_attr.bundle())
-                .insert(comp.bundle_mux(&wires));
+                .spawn(comp.bundle_mux(&wires));
             },
             CompType::Demux(value) => {
                 commands
-                .spawn(comp.model_attr.bundle())
-                .insert(comp.bundle_demux(&wires, value));
-            },
-            CompType::Constant(value) => {
-                commands
-                .spawn(comp.model_attr.bundle())
-                .insert(comp.bundle_const(&wires, value));
+                .spawn(comp.bundle_demux(&wires, value));
             },
             CompType::Gate(op) => {
                 commands
-                .spawn(comp.model_attr.bundle())
-                .insert(comp.bundle_gate(&wires, op));
+                .spawn(comp.bundle_gate(&wires, op));
             },
-            CompType::Keyboard => {
+            CompType::Fixed(value) => {
                 commands
-                .spawn(comp.model_attr.bundle())
-                .insert(comp.bundle_keyboard(&wires));
+                .spawn(comp.bundle_fixed(&wires, value));
+            },
+            CompType::Input => {
+                commands
+                .spawn(comp.bundle_input(&wires));
             },
         }; // */
     }

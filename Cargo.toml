@@ -28,5 +28,7 @@ petgraph = "0.6"
 bit-vec  = "0.6"
 fasthash = "0.4"
 
+# convert voxel data into an optimized mesh of triangles
+block-mesh = "0.2.0"
 
 bevy = "0.9"

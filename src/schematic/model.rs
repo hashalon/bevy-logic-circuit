@@ -1,9 +1,8 @@
 /**
  * represent a model to load, build and to display in bevy
  */
-use bevy::{prelude::*, render::mesh::*};
+use bevy::render::mesh;
 use serde::{Deserialize, Serialize};
-use crate::circuit::BundleModel;
 use crate::math::*;
 
 
@@ -27,21 +26,12 @@ pub struct ModelAttr {
 pub struct ModelData (pub Vec<Box3i>);
 
 
-impl ModelAttr {
-    pub fn bundle(&self) -> BundleModel {
-        BundleModel {
-
-        }
-    }
-}
-
-
 impl ModelData {
-    pub fn build_model(&self) -> Mesh {
+    pub fn build_mesh(&self) -> mesh::Mesh {
         let size = self.0.len();
 
         // build arrays to store model information
-        let mut indexes  = Vec::<MeshIndex >::with_capacity(size * INDEXES .len());
+        let mut indexes = Vec::<MeshIndex>::with_capacity(size * INDEXES .len());
         let mut vertexes = Vec::<MeshVertex>::with_capacity(size * VERTEXES.len());
 
         // add vertices and indices to the lists
@@ -50,11 +40,11 @@ impl ModelData {
             add_to_model(&abox, &occluded, &mut indexes, &mut vertexes);
         }
 
-        let indices  = Indices::U32(indexes);
-        let mut mesh = Mesh::new(PrimitiveTopology::TriangleList);
-        mesh.set_indices(Some(indices));
-        mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, vertexes);
-        return mesh;
+        let indices  = mesh::Indices::U32(indexes);
+        let mut amesh = mesh::Mesh::new(mesh::PrimitiveTopology::TriangleList);
+        amesh.set_indices(Some(indices));
+        amesh.insert_attribute(mesh::Mesh::ATTRIBUTE_POSITION, vertexes);
+        amesh
     }
 }
 

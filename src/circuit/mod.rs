@@ -6,11 +6,11 @@ use bevy::prelude::*;
 
 mod base;
 mod wire;
-mod constant;
+mod fixed;
 mod gate;
 mod mux;
 mod bus;
-mod keyboard;
+mod input;
 
 // types to export
 pub use base::{
@@ -23,18 +23,13 @@ pub use base::{
     PinChannel,
     PinsIn,
     PinsOut,
-    BundleModel,
 };
 pub use wire::WireBundle;
-pub use constant::{Constant, BundleConst};
-pub use gate::{Operator, BundleGate};
-pub use mux::{Mux, Demux, BundleMux, BundleDemux};
-pub use bus::{Bus, BundleBus};
-pub use keyboard::{
-    KeyboardBuffer,
-    KeyboardConnector,
-    BundleKeyboard,
-};
+pub use fixed::{Fixed, FixedBundle};
+pub use gate::{Operator, GateBundle};
+pub use mux::{Mux, Demux, MuxBundle, DemuxBundle};
+pub use bus::{Bus, BusBundle};
+pub use input::{DataBuffer, Connector, InputBundle};
 
 
 // plugin for running the circuit
@@ -53,18 +48,18 @@ impl Plugin for CircuitPlugin {
         app
 
         // add singleton components as resources
-        .insert_resource(KeyboardBuffer::default())
+        .insert_resource(DataBuffer::default())
 
         // reset before next tick
-        .add_system(wire    ::sys_reset.label(Label::Reset))
-        .add_system(keyboard::sys_reset.label(Label::Reset))
+        .add_system(wire ::sys_reset.label(Label::Reset))
+        .add_system(input::sys_reset.label(Label::Reset))
 
         // tick update
-        .add_system(bus     ::sys_tick.after(Label::Reset))
-        .add_system(gate    ::sys_tick.after(Label::Reset))
-        .add_system(constant::sys_tick.after(Label::Reset))
-        .add_system(keyboard::sys_tick.after(Label::Reset))
-        .add_system(mux::sys_tick_mux  .after(Label::Reset))
-        .add_system(mux::sys_tick_demux.after(Label::Reset));
+        .add_system(bus  ::sys_tick.after(Label::Reset))
+        .add_system(gate ::sys_tick.after(Label::Reset))
+        .add_system(fixed::sys_tick.after(Label::Reset))
+        .add_system(input::sys_tick.after(Label::Reset))
+        .add_system(mux  ::sys_tick_mux  .after(Label::Reset))
+        .add_system(mux  ::sys_tick_demux.after(Label::Reset));
     }
 }

@@ -32,7 +32,3 @@ pub struct PinsIn(pub Vec<Entity>);
 // outputs leaving a component
 #[derive(Component)]
 pub struct PinsOut(pub Vec<Entity>);
-
-
-#[derive(Bundle)]
-pub struct BundleModel {}

@@ -12,7 +12,7 @@ pub struct Bus;
 
 // mux entity
 #[derive(Bundle)]
-pub struct BundleBus {
+pub struct BusBundle {
     pub comp: Bus,
     pub pins_in : PinsIn,
     pub pins_out: PinsOut,
