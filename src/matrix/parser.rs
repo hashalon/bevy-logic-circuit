@@ -9,8 +9,8 @@ use crate::matrix::Matrix;
 
 
 // label type used to analyze morphologic shapes
-pub type Label     = u32;
-pub type Signature = u64;
+pub type Label = u32;
+pub type Morph = u64;
 pub type FnEmpty<T> = dyn Fn(T) -> bool;
 
 // regroup the type of the component, its position and the model to use
@@ -20,20 +20,14 @@ pub struct Element<T: Clone + Copy + Eq + Default> {
     pub value    : T,
     pub position : Vec3i,
     pub volume   : usize,
-    pub signature: Signature,
+    pub morph    : Morph,
 }
 
 impl<T: Clone + Copy + Eq + Default> Element<T> {
     // make a new container of component data
-    pub fn new(label: Label, value: T, position: Vec3i, volume: usize, signature: Signature) 
+    pub fn new(label: Label, value: T, position: Vec3i, volume: usize, morph: Morph) 
     -> Self {
-        Self {
-            label    : label,
-            value    : value,
-            position : position,
-            volume   : volume,
-            signature: signature,
-        }
+        Self {label, value, position, volume, morph}
     }
 }
 
@@ -45,7 +39,7 @@ impl<T: Clone + Copy + Eq + Default> Element<T> {
             value    : T::default(),
             position : Vec3i::new(0, 0, 0),
             volume   : 0,
-            signature: 0,
+            morph    : 0,
         }
     }
 }
@@ -54,7 +48,7 @@ impl<T: Clone + Copy + Eq + Default> Element<T> {
 // parse the matrix and deduce data that will be used to make a schematic
 pub fn parse_matrix<T: Clone + Copy + Eq + Default>
 (matrix: &Matrix<T>, is_empty: &FnEmpty<T>, threshold: usize) 
--> (Csr<Label, ()>, Vec<Element<T>>, HashMap<Signature, ModelData>) {
+-> (Csr<Label, ()>, Vec<Element<T>>, HashMap<Morph, ModelData>) {
     
     // generate a matrix with a label for each component
     let (labels_matrix, labels_mapping) = connected_component_labeling(matrix, is_empty);
@@ -69,7 +63,7 @@ pub fn parse_matrix<T: Clone + Copy + Eq + Default>
     // build two lists with element data and model
     let mut elements = Vec::<Element<T>>::with_capacity(labels_amount);
     elements.resize(labels_amount, Element::default());
-    let mut models = HashMap::<Signature, ModelData>::with_capacity(labels_amount);
+    let mut models = HashMap::<Morph, ModelData>::with_capacity(labels_amount);
 
     // for each label, generate corresponding component data
     for (index, abox) in boxes.iter().enumerate() {
@@ -77,13 +71,13 @@ pub fn parse_matrix<T: Clone + Copy + Eq + Default>
         let value = labels_mapping[&label];
 
         // find the morphological signature
-        let (signature, volume) = generate_signature(&labels_matrix, label, *abox);
-        elements[index] = Element::<T>::new(label, value, abox.begin, volume, signature);
+        let (morph, volume) = generate_morph(&labels_matrix, label, *abox);
+        elements[index] = Element::<T>::new(label, value, abox.begin, volume, morph);
 
         // if the component has a new morphology, generate a model for it
-        if !models.contains_key(&signature) {
-            models.insert(signature, generate_model(&labels_matrix, label, *abox));
-        }
+        //if !models.contains_key(&morph) {
+        //    models.insert(morph, generate_model(&labels_matrix, label, *abox));
+        //}
     }
     models.shrink_to_fit();
     return (graph, elements, models);
@@ -212,8 +206,8 @@ fn find_bounding_boxes(matrix: &Matrix<Label>, labels_amount: usize) -> Vec<Box3
 }
 
 
-// generate signatures for a each component
-fn generate_signature(matrix: &Matrix<Label>, label: Label, abox: Box3i) -> (Signature, usize) {
+// generate morphological signatures for a each component
+fn generate_morph(matrix: &Matrix<Label>, label: Label, abox: Box3i) -> (Morph, usize) {
     // prepare a bitvec to represent the morphological pattern
     let mut bitvec = BitVec::from_elem(abox.size().index_range(), false);
 
@@ -240,6 +234,7 @@ fn generate_signature(matrix: &Matrix<Label>, label: Label, abox: Box3i) -> (Sig
 
 // TODO: remove this part and replace by simple matrix to be used with "block-mesh"
 // generate a box model for the component
+#[deprecated]
 fn generate_model(matrix: &Matrix<Label>, label: Label, abox: Box3i) -> ModelData {
     let mut boxes = Vec::<Box3i>::with_capacity(abox.size().sum());
 
@@ -269,6 +264,7 @@ fn generate_model(matrix: &Matrix<Label>, label: Label, abox: Box3i) -> ModelDat
 
 
 // find the end point of a new box to generate
+#[deprecated]
 fn group_box(matrix: &Matrix<Label>, label: Label, from: Vec3i, to: Vec3i) -> Vec3i {
     let mut end_point = to;
     // group a line

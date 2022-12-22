@@ -3,26 +3,19 @@
  */
 
 use bevy::prelude::*;
-use crate::circuit::base::*;
+use super::*;
+
 
 // multiplexer
 #[derive(Component)]
-pub struct Bus;
-
-
-// mux entity
-#[derive(Bundle)]
-pub struct BusBundle {
-    pub comp: Bus,
-    pub pins_in : PinsIn,
-    pub pins_out: PinsOut,
-}
+pub struct CompBus;
+// CompBus, PinsIn, PinsOut
 
 
 // combine multiple input values as boolean into a single wire
 pub fn sys_tick(
-    comp_query: Query<(&PinsIn, &PinsOut), With<Bus>>,
-    prev_query: Query<(&PinChannel, &DataPrevious)>,
+    comp_query: Query<(&PinsIn, &PinsOut), With<CompBus>>,
+    prev_query: Query<(&PinChannel, &DataPrev)>,
     mut next_query: Query<(&PinChannel, &mut DataNext)>
 ) {
     for (pins_in, pins_out) in comp_query.iter() {
@@ -44,3 +37,4 @@ pub fn sys_tick(
         }
     }
 }
+

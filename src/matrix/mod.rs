@@ -3,11 +3,11 @@
  */
 
 
-mod matrix;
+mod base;
 mod parser;
 mod converter;
 
 
-pub use matrix::*;
+pub use base::*;
 pub use parser::*;
 pub use converter::*;

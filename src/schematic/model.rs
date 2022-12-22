@@ -22,10 +22,9 @@ pub struct ModelAttr {
 }
 
 // the actual model representation
+#[deprecated]
 #[derive(Serialize, Deserialize)]
 pub struct ModelData (pub Vec<Box3i>);
-
-
 impl ModelData {
     pub fn build_mesh(&self) -> mesh::Mesh {
         let size = self.0.len();
@@ -51,10 +50,10 @@ impl ModelData {
 
 // indicate if the given face is occluded or not
 // match the same order as the 'INDEXES' array
+#[deprecated]
 type Occluded = [bool; 6];
-
-
 // specify which face of the box is fully occluded
+#[deprecated]
 fn check_occlusions(abox: &Box3i, index: usize, boxes: &Vec<Box3i>) -> Occluded {
     let mut occluded: Occluded = [false; 6];
 
@@ -93,7 +92,6 @@ const INDEXES: [[MeshIndex; 6]; 6] = [
     [0, 4, 1, 1, 4, 5], // bottom
     [3, 7, 2, 2, 7, 6], // top
 ];
-
 const VERTEXES: [MeshVertex; 8] = [
     [0.0, 0.0, 0.0], // front-bottom-left
     [1.0, 0.0, 0.0], // front-bottom-right
@@ -104,7 +102,6 @@ const VERTEXES: [MeshVertex; 8] = [
     [1.0, 1.0, 1.0], // back-top-right
     [0.0, 1.0, 1.0], // back-top-left
 ];
-
 // add the box to the mesh model
 fn add_to_model(
     abox    : &Box3i, 

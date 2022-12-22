@@ -15,7 +15,7 @@ use schematic::*;
 
 fn main() {
 
-    let schema = Schema::new();
+    let schema = Schema::default();
 
 
     App::new()

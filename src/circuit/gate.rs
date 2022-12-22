@@ -3,9 +3,9 @@
  */
 
 use bevy::prelude::*;
-use crate::circuit::base::*;
 use serde::{Deserialize, Serialize};
 use std::cmp::{min, max};
+use super::*;
 
 
 // operators available
@@ -20,21 +20,13 @@ pub enum Operator {
     Min,
     Max,
 }
-
-
-// constant entity
-#[derive(Bundle)]
-pub struct GateBundle {
-    pub comp    : Operator,
-    pub pins_in : PinsIn,
-    pub pins_out: PinsOut,
-}
+// Operator, PinsIn, PinsOut
 
 
 // handle logic gates
 pub fn sys_tick(
     comp_query: Query<(&Operator, &PinsIn, &PinsOut)>,
-    prev_query: Query<&DataPrevious>,
+    prev_query: Query<&DataPrev>,
     mut next_query: Query<&mut DataNext>
 ) {
     for (operator, pins_in, pins_out) in comp_query.iter() {
@@ -74,3 +66,4 @@ pub fn sys_tick(
         }
     }
 }
+

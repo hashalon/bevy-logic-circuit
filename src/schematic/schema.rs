@@ -3,17 +3,17 @@
  */
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
-use std::{fs, path, io, fmt, error};
-use crate::circuit::{Channel, NB_CHANNELS};
+use std::{fs, path, io, fmt, error, convert};
+use crate::circuit::*;
 use crate::schematic::*;
 
 
 // indicate position of the model and model to use
 #[derive(Serialize, Deserialize, Resource)]
 pub struct Schema {
-    pub wires      : Vec<WireData>,
-    pub components : Vec<CompData>,
-    pub models     : Vec<ModelData>,
+    pub wires: Vec<SchemaWire>,
+    pub comps: Vec<SchemaComp>,
+    pub models: Vec<ModelData>,
 }
 
 
@@ -21,8 +21,8 @@ pub struct Schema {
 #[derive(Debug)]
 pub enum Error {
     WireChannel (usize, Channel),
-    WireModel   (usize, WireIndex),
-    CompModel   (usize, WireIndex),
+    WireModel   (usize, Index),
+    CompModel   (usize, Index),
     PinIn       (usize, usize),
     PinOut      (usize, usize),
 }
@@ -40,15 +40,18 @@ impl fmt::Display for Error {
 }
 
 
-impl Schema {
-    pub fn new() -> Self {
+impl Default for Schema {
+    fn default() -> Self {
         Self {
-            wires      : Vec::<WireData> ::new(),
-            components : Vec::<CompData> ::new(),
-            models     : Vec::<ModelData>::new(),
+            wires : Vec::default(),
+            comps : Vec::default(),
+            models: Vec::default()
         }
     }
+}
 
+
+impl Schema {
     // check that the schema is valid before building the circuit
     pub fn verify(&self) -> Result<(), Vec<Error>> {
         let mut errors = Vec::<Error>::new();
@@ -63,16 +66,16 @@ impl Schema {
                 errors.push(Error::WireChannel(i, wire.channel));
             }
             // check that associated model exists
-            if wire.model_attr.index as usize >= nb_models {
-                errors.push(Error::WireModel(i, wire.model_attr.index));
+            if wire.model.mesh_index as usize >= nb_models {
+                errors.push(Error::WireModel(i, wire.model.mesh_index));
             }
         }
 
         // check that all elements are valid
-        for (i, elem) in self.components.iter().enumerate() {
+        for (i, elem) in self.comps.iter().enumerate() {
             // check that associated model exists
-            if elem.model_attr.index as usize >= nb_models {
-                errors.push(Error::CompModel(i, elem.model_attr.index));
+            if elem.model.mesh_index as usize >= nb_models {
+                errors.push(Error::CompModel(i, elem.model.mesh_index));
             }
             // check that inputs exist
             for pin in elem.pins_in.iter() {
@@ -150,45 +153,34 @@ pub fn build_circuit (mut commands: Commands, schema: Res<Schema>) {
 
     // generate list of wires
     let wires: Vec<Entity> = schema.wires.iter().map(|wire|
-        commands
-        .spawn(wire.bundle()).id()
+        commands.spawn(WireBundle::new(wire.channel)).id()
     ).collect();
 
     // generate list of elements
-    for comp in schema.components.iter() {
-        /* TODO: could be used as soon as bevy support Bundle to be made into objects
-        commands
-        .spawn(comp.model_attr.bundle())
-        .insert(comp.bundle(&wires));
-        // */
+    for comp in schema.comps.iter() {
+        let pins_in  = PinsIn(convert_wire_list(&comp.pins_in , &wires));
+        let pins_out = PinsOut(convert_wire_list(&comp.pins_out, &wires));
 
-        //* for now we have to implement a bundle fonction for each element type
         match comp.comp_type {
-            CompType::Bus => {
-                commands
-                .spawn(comp.bundle_bus(&wires));
-            }
+            CompType::Gate (op) => {
+                commands.spawn((op, pins_in, pins_out));
+            },
             CompType::Mux => {
-                commands
-                .spawn(comp.bundle_mux(&wires));
+                commands.spawn((CompMux {}, pins_in, pins_out));
             },
-            CompType::Demux(value) => {
-                commands
-                .spawn(comp.bundle_demux(&wires, value));
+            CompType::Demux (val) => {
+                commands.spawn((CompDemux (val), pins_in, pins_out));
             },
-            CompType::Gate(op) => {
-                commands
-                .spawn(comp.bundle_gate(&wires, op));
+            CompType::Fixed (val) => {
+                commands.spawn((CompFixed (val), pins_out));
             },
-            CompType::Fixed(value) => {
-                commands
-                .spawn(comp.bundle_fixed(&wires, value));
+            CompType::Bus => {
+                commands.spawn((CompBus {}, pins_in, pins_out));
             },
             CompType::Input => {
-                commands
-                .spawn(comp.bundle_input(&wires));
+                commands.spawn((CompInput {}, pins_out));
             },
-        }; // */
+        }
     }
 }
 

@@ -3,13 +3,13 @@
  */
 use bevy::prelude::*;
 
+mod base;
 mod model;
-mod component;
 mod schema;
 
 
+pub use base::*;
 pub use model::{ModelIndex, ModelAttr, ModelData};
-pub use component::{WireIndex, CompType, CompData, WireData};
 pub use schema::*;
 
 

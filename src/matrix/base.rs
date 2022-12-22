@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 use crate::math::{Vec3i, Box3i};
-
+use crate::circuit::{Channel, Data, Operator};
 
 
 // indicate position of the model and model to use
@@ -72,4 +72,17 @@ impl<T: Clone + Copy + Eq + Default> Matrix<T> {
             if z < self.size.z - 1 {self.get(x, y, z + 1)} else {out_of_bound},
         ]
     }
+}
+
+
+// Specify the type of an element in the schematic
+pub enum ElemType {
+    Empty,
+    Wire  (Channel),
+    Fixed (Data),
+    Gate  (Operator),
+    Mux,
+    Demux (Data),
+    Bus,
+    Input,
 }

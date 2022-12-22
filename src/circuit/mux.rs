@@ -3,38 +3,25 @@
  */
 
 use bevy::prelude::*;
-use crate::circuit::base::*;
+use super::*;
+
 
 // multiplexer
 #[derive(Component)]
-pub struct Mux;
+pub struct CompMux;
+// CompMux, PinsIn, PinsOut
+
 
 // demultiplexer with output value to emit on each wire
 #[derive(Component)]
-pub struct Demux(pub Data);
-
-
-// mux entity
-#[derive(Bundle)]
-pub struct MuxBundle {
-    pub comp: Mux,
-    pub pins_in : PinsIn,
-    pub pins_out: PinsOut,
-}
-
-// mux entity
-#[derive(Bundle)]
-pub struct DemuxBundle {
-    pub comp: Demux,
-    pub pins_in : PinsIn,
-    pub pins_out: PinsOut,
-}
+pub struct CompDemux(pub Data);
+// CompDemux, PinsIn, PinsOut
 
 
 // combine multiple input values as boolean into a single wire
 pub fn sys_tick_mux(
-    comp_query: Query<(&PinsIn, &PinsOut), With<Mux>>,
-    prev_query: Query<(&PinChannel, &DataPrevious)>,
+    comp_query: Query<(&PinsIn, &PinsOut), With<CompMux>>,
+    prev_query: Query<(&PinChannel, &DataPrev)>,
     mut next_query: Query<&mut DataNext>
 ) {
     for (pins_in, pins_out) in comp_query.iter() {
@@ -58,8 +45,8 @@ pub fn sys_tick_mux(
 
 // split an input value into multiple boolean output
 pub fn sys_tick_demux(
-    comp_query: Query<(&Demux, &PinsIn, &PinsOut)>,
-    prev_query: Query<&DataPrevious>,
+    comp_query: Query<(&CompDemux, &PinsIn, &PinsOut)>,
+    prev_query: Query<&DataPrev>,
     mut next_query: Query<(&PinChannel, &mut DataNext)>
 ) {
     for (output, pins_in, pins_out) in comp_query.iter() {
@@ -82,3 +69,4 @@ pub fn sys_tick_demux(
         }
     }
 }
+

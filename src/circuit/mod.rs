@@ -18,18 +18,18 @@ pub use base::{
     DATA_SIZE,
     Channel,
     Data,
-    DataPrevious,
+    DataPrev,
     DataNext,
     PinChannel,
     PinsIn,
     PinsOut,
 };
 pub use wire::WireBundle;
-pub use fixed::{Fixed, FixedBundle};
-pub use gate::{Operator, GateBundle};
-pub use mux::{Mux, Demux, MuxBundle, DemuxBundle};
-pub use bus::{Bus, BusBundle};
-pub use input::{DataBuffer, Connector, InputBundle};
+pub use bus::CompBus;
+pub use fixed::CompFixed;
+pub use gate::Operator;
+pub use mux::{CompMux, CompDemux};
+pub use input::{SharedBuffer, CompInput};
 
 
 // plugin for running the circuit
@@ -48,7 +48,7 @@ impl Plugin for CircuitPlugin {
         app
 
         // add singleton components as resources
-        .insert_resource(DataBuffer::default())
+        .insert_resource(SharedBuffer::default())
 
         // reset before next tick
         .add_system(wire ::sys_reset.label(Label::Reset))

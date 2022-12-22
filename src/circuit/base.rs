@@ -13,7 +13,7 @@ pub type Data    = u16;
 
 // data on the wire on the previous tick
 #[derive(Component)]
-pub struct DataPrevious(pub Data);
+pub struct DataPrev(pub Data);
 
 // data on the wire on the next tick
 #[derive(Component)]
