@@ -1,11 +1,10 @@
-use std::{cmp::min, hash::{Hash, Hasher}, collections::HashMap};
-use disjoint_hash_set::DisjointHashSet;
+use std::collections::HashMap;
 use petgraph::csr::Csr;
 use super::*;
 
 
 // analyze the matrix to find connections between components
-fn find_connections(matrix: &Matrix<Label>, labels_amount: usize, threshold: usize) 
+pub fn find_connections(matrix: &Matrix<Label>, labels_amount: usize, threshold: usize) 
 -> Csr<Label, ()> {
 
     // prepare a graph with all the nodes

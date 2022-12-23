@@ -6,9 +6,11 @@ use bevy::{
 };
 
 mod math;
+mod matrix;
 mod circuit;
 mod schematic;
 
+use matrix::*;
 use circuit::*;
 use schematic::*;
 

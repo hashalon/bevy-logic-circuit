@@ -1,4 +1,4 @@
-use std::{cmp::min, hash::{Hash, Hasher}, collections::HashMap};
+use std::hash::{Hash, Hasher};
 use bit_vec::BitVec;
 use fasthash::MetroHasher;
 use crate::math::{Vec3i, Box3i};
@@ -10,48 +10,8 @@ use super::*;
 pub type Morph = u64;
 
 
-// parse the matrix and deduce data that will be used to make a schematic
-pub fn parse_matrix<T: Clone + Copy + Eq + Default>
-(matrix: &Matrix<T>, is_empty: &FnEmpty<T>, threshold: usize) 
--> (Csr<Label, ()>, Vec<Element<T>>, HashMap<Morph, ModelData>) {
-    
-    // generate a matrix with a label for each component
-    let (labels_matrix, labels_mapping) = connected_component_labeling(matrix, is_empty);
-    let labels_amount = labels_mapping.len();
-
-    // find how elements are connected togethers
-    let graph = find_connections(&labels_matrix, labels_amount, threshold);
-
-    // find the minimal bounding box of each component
-    let boxes = find_bounding_boxes(&labels_matrix, labels_amount);
-
-    // build two lists with element data and model
-    let mut elements = Vec::<Element<T>>::with_capacity(labels_amount);
-    elements.resize(labels_amount, Element::default());
-    let mut models = HashMap::<Morph, ModelData>::with_capacity(labels_amount);
-
-    // for each label, generate corresponding component data
-    for (index, abox) in boxes.iter().enumerate() {
-        let label = (index + 1) as Label;
-        let value = labels_mapping[&label];
-
-        // find the morphological signature
-        let (morph, volume) = generate_morph(&labels_matrix, label, *abox);
-        elements[index] = Element::<T>::new(label, value, abox.begin, volume, morph);
-
-        // if the component has a new morphology, generate a model for it
-        //if !models.contains_key(&morph) {
-        //    models.insert(morph, generate_model(&labels_matrix, label, *abox));
-        //}
-    }
-    models.shrink_to_fit();
-    return (graph, elements, models);
-}
-
-
-
 // find the bounding for each label in the matrix
-fn find_bounding_boxes(matrix: &Matrix<Label>, labels_amount: usize) -> Vec<Box3i> {
+pub fn find_bounding_boxes(matrix: &Matrix<Label>, labels_amount: usize) -> Vec<Box3i> {
     // define a box for each label
     let mut boxes = Vec::<Box3i>::with_capacity(labels_amount);
     boxes.resize(labels_amount, Box3i::new(matrix.size, Vec3i::new(0, 0, 0)));
@@ -71,7 +31,7 @@ fn find_bounding_boxes(matrix: &Matrix<Label>, labels_amount: usize) -> Vec<Box3
 
 
 // generate morphological signatures for a each component
-fn generate_morph(matrix: &Matrix<Label>, label: Label, abox: Box3i) -> (Morph, usize) {
+pub fn generate_morph(matrix: &Matrix<Label>, label: Label, abox: Box3i) -> (Morph, usize) {
     // prepare a bitvec to represent the morphological pattern
     let mut bitvec = BitVec::from_elem(abox.size().index_range(), false);
 

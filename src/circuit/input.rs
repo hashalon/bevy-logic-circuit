@@ -1,35 +1,29 @@
-/**
- * logic components to build circuitry
-*/
-
 use bevy::prelude::*;
 use bevy::input::{keyboard, ButtonState};
 use super::*;
 
 
-// pool keyboard inputs and convert it into a data buffer
+/* Keyboard Input Device */
 #[derive(Resource)]
-pub struct SharedBuffer {
+pub struct InputDevice {
     buffer: [Data; NB_CHANNELS],
 }
-
-// build a default buffer for keyboard inputs
-impl Default for SharedBuffer {
+impl Default for InputDevice {
     fn default() -> Self {
         Self { buffer: Default::default() }
     }
 }
 
-// allow to input keyboard inputs into the circuit
+
+/* Keyboard Input Entity: CompInput, PinsOut */
 #[derive(Component)]
 pub struct CompInput;
-// CompInput, PinsOut
 
 
 // apply computed buffer to output pins
-pub fn sys_reset(
+pub fn sys_tock(
     mut events: EventReader<keyboard::KeyboardInput>,
-    mut device: ResMut<SharedBuffer>,
+    mut device: ResMut<InputDevice>,
 ) {
     for event in events.iter() {
 
@@ -49,7 +43,7 @@ pub fn sys_reset(
 
 // apply computed buffer to output pins
 pub fn sys_tick(
-    device: Res<SharedBuffer>,
+    device: Res<InputDevice>,
     comp_query: Query<&PinsOut, With<CompInput>>,
     mut next_query: Query<(&PinChannel, &mut DataNext)>
 ) {

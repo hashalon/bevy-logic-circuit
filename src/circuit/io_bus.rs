@@ -1,20 +1,15 @@
-/**
- * IO Bus
- */
-
 use bevy::prelude::*;
 use super::*;
 
 
-// multiplexer
+/* IO Bus Entity: CompBus, PinsIn, PinsOut */
 #[derive(Component)]
-pub struct CompBus;
-// CompBus, PinsIn, PinsOut
+pub struct CompIOBus;
 
 
 // combine multiple input values as boolean into a single wire
 pub fn sys_tick(
-    comp_query: Query<(&PinsIn, &PinsOut), With<CompBus>>,
+    comp_query: Query<(&PinsIn, &PinsOut), With<CompIOBus>>,
     prev_query: Query<(&PinChannel, &DataPrev)>,
     mut next_query: Query<(&PinChannel, &mut DataNext)>
 ) {

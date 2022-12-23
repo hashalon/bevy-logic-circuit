@@ -30,7 +30,7 @@ impl ModelData {
         let size = self.0.len();
 
         // build arrays to store model information
-        let mut indexes = Vec::<MeshIndex>::with_capacity(size * INDEXES .len());
+        let mut indexes  = Vec::<MeshIndex> ::with_capacity(size * INDEXES .len());
         let mut vertexes = Vec::<MeshVertex>::with_capacity(size * VERTEXES.len());
 
         // add vertices and indices to the lists
@@ -39,7 +39,7 @@ impl ModelData {
             add_to_model(&abox, &occluded, &mut indexes, &mut vertexes);
         }
 
-        let indices  = mesh::Indices::U32(indexes);
+        let indices   = mesh::Indices::U32(indexes);
         let mut amesh = mesh::Mesh::new(mesh::PrimitiveTopology::TriangleList);
         amesh.set_indices(Some(indices));
         amesh.insert_attribute(mesh::Mesh::ATTRIBUTE_POSITION, vertexes);

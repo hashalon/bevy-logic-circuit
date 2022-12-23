@@ -3,7 +3,7 @@
  */
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
-use std::{fs, path, io, fmt, error, convert};
+use std::{fs, path, io, fmt, error};
 use crate::circuit::*;
 use crate::schematic::*;
 
@@ -31,8 +31,8 @@ impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             Self::WireChannel (n, c) => write!(f, "Wire Channel Error at {} channel={}", n, c),
-            Self::WireModel   (n, i)  => write!(f, "Wire Model Error at {}, index={}", n, i),
-            Self::CompModel   (n, i)  => write!(f, "Component Model Error at {}, index={}", n, i),
+            Self::WireModel   (n, i) => write!(f, "Wire Model Error at {}, index={}", n, i),
+            Self::CompModel   (n, i) => write!(f, "Component Model Error at {}, index={}", n, i),
             Self::PinIn       (n, i) => write!(f, "Pin Input Error at {}, {}", n, i),
             Self::PinOut      (n, i) => write!(f, "Pin Output Error at {}, {}", n, i),
         }
@@ -153,7 +153,11 @@ pub fn build_circuit (mut commands: Commands, schema: Res<Schema>) {
 
     // generate list of wires
     let wires: Vec<Entity> = schema.wires.iter().map(|wire|
-        commands.spawn(WireBundle::new(wire.channel)).id()
+        commands.spawn((
+            PinChannel (wire.channel), 
+            DataPrev   (0), 
+            DataNext   (0)
+        )).id()
     ).collect();
 
     // generate list of elements
@@ -175,7 +179,7 @@ pub fn build_circuit (mut commands: Commands, schema: Res<Schema>) {
                 commands.spawn((CompFixed (val), pins_out));
             },
             CompType::Bus => {
-                commands.spawn((CompBus {}, pins_in, pins_out));
+                commands.spawn((CompIOBus {}, pins_in, pins_out));
             },
             CompType::Input => {
                 commands.spawn((CompInput {}, pins_out));

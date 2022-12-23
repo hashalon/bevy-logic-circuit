@@ -1,14 +1,10 @@
-/**
- * logic components to build circuitry
- */
-
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::cmp::{min, max};
 use super::*;
 
 
-// operators available
+/* Logic Gate Entity: Operator, PinsIn, PinsOut */
 #[derive(Clone, Copy, Component, Deserialize, Serialize)]
 pub enum Operator {
     Or,
@@ -20,7 +16,6 @@ pub enum Operator {
     Min,
     Max,
 }
-// Operator, PinsIn, PinsOut
 
 
 // handle logic gates

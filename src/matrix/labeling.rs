@@ -1,6 +1,5 @@
-use std::{cmp::min, hash::{Hash, Hasher}, collections::HashMap};
+use std::{cmp::min, collections::HashMap};
 use disjoint_hash_set::DisjointHashSet;
-use crate::math::{Vec3i, Box3i};
 use super::*;
 
 
@@ -10,7 +9,7 @@ pub type FnEmpty<T> = dyn Fn(T) -> bool;
 
 
 // basic two pass implementation of the 6-connected component labeling algorithm
-fn connected_component_labeling<T: Clone + Copy + Eq + Default>
+pub fn connected_component_labeling<T: Clone + Copy + Eq + Default>
 (matrix: &Matrix<T>, is_empty: &FnEmpty<T>) 
 -> (Matrix<Label>, HashMap<Label, T>) {
 

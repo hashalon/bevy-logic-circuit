@@ -1,17 +1,13 @@
-/**
- * simple component that output a value
- */
 use bevy::prelude::*;
 use super::*;
 
 
-// constant input value
+/* Fixed Value Entity: CompFixed, PinsOut */
 #[derive(Component)]
 pub struct CompFixed(pub Data);
-// CompFixed, PinsOut
 
 
-// simply apply the constant
+
 pub fn sys_tick(
     comp_query: Query<(&CompFixed, &PinsOut)>,
     mut next_query: Query<&mut DataNext>
