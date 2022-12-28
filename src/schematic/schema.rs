@@ -13,7 +13,7 @@ use crate::schematic::*;
 pub struct Schema {
     pub wires: Vec<SchemaWire>,
     pub comps: Vec<SchemaComp>,
-    pub models: Vec<ModelData>,
+    pub models: Vec<Model>,
 }
 
 

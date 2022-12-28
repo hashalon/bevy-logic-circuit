@@ -1,8 +1,9 @@
 use std::collections::HashMap;
 use petgraph::csr::Csr;
 use crate::math::Vec3i;
-use crate::schematic::ModelData;
+use crate::schematic;
 use super::*;
+
 
 // regroup the type of the component, its position and the model to use
 #[derive(Clone)]
@@ -36,7 +37,7 @@ impl<T: Clone + Copy + Eq + Default> Element<T> {
 // parse the matrix and deduce data that will be used to make a schematic
 pub fn parse_matrix<T: Clone + Copy + Eq + Default>
 (matrix: &Matrix<T>, is_empty: &FnEmpty<T>, threshold: usize) 
--> (Csr<Label, ()>, Vec<Element<T>>, HashMap<Morph, ModelData>) {
+-> (Csr<Label, ()>, Vec<Element<T>>, HashMap<Morph, schematic::Model>) {
     
     // generate a matrix with a label for each component
     let (labels_matrix, labels_mapping) = connected_component_labeling(matrix, is_empty);
@@ -51,7 +52,7 @@ pub fn parse_matrix<T: Clone + Copy + Eq + Default>
     // build two lists with element data and model
     let mut elements = Vec::<Element<T>>::with_capacity(labels_amount);
     elements.resize(labels_amount, Element::default());
-    let mut models = HashMap::<Morph, ModelData>::with_capacity(labels_amount);
+    let mut models = HashMap::<Morph, schematic::Model>::with_capacity(labels_amount);
 
     // for each label, generate corresponding component data
     for (index, abox) in boxes.iter().enumerate() {

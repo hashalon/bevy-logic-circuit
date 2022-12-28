@@ -1,8 +1,13 @@
 use std::hash::{Hash, Hasher};
 use bit_vec::BitVec;
 use fasthash::MetroHasher;
+use block_mesh::ndshape::{ConstShape, ConstShape3u32};
+use block_mesh::{
+    greedy_quads, GreedyQuadsBuffer, MergeVoxel, Voxel,
+    VoxelVisibility, RIGHT_HANDED_Y_UP_CONFIG,
+};
 use crate::math::{Vec3i, Box3i};
-use crate::schematic::ModelData;
+use crate::schematic;
 use super::*;
 
 
@@ -56,67 +61,73 @@ pub fn generate_morph(matrix: &Matrix<Label>, label: Label, abox: Box3i) -> (Mor
 }
 
 
-// TODO: remove this part and replace by simple matrix to be used with "block-mesh"
-// generate a box model for the component
-#[deprecated]
-fn generate_model(matrix: &Matrix<Label>, label: Label, abox: Box3i) -> ModelData {
-    let mut boxes = Vec::<Box3i>::with_capacity(abox.size().sum());
 
-    // build boxes until all cells of the component are covered
-    matrix.for_each_in_box(abox, &mut |x, y, z| {
-        if label == matrix.get(x, y, z) {
-            let begin = Vec3i::new(x, y, z);
+// References:
+// https://0fps.net/2012/06/30/meshing-in-a-minecraft-game/
+// https://github.com/bonsairobo/block-mesh-rs/blob/main/examples-crate/render/main.rs
 
-            // generate a new box if the cell is not already part of an other box
-            let mut to_add = true;
-            for bbox in boxes.iter() {
-                if bbox.bounds(begin) {
-                    to_add = false;
-                    break;
-                }
-            }
-            // the box can be generated an added
-            if to_add {
-                let end = group_box(matrix, label, begin, abox.end);
-                boxes.push(Box3i::new(begin - abox.begin, end - abox.begin));
-            }
+
+// we define the size of a chunk as a cube of 256 * 256 * 256
+// the total number of voxels in the cube needs to be smaller than a 2^32 anyway
+const SIZE: u32 = 0x100;
+type Chunk = ConstShape3u32<SIZE, SIZE, SIZE>;
+
+
+// this function generate a trimesh from a matrix
+pub fn generate_model(matrix: &Matrix<Label>, label: Label) -> schematic::Model {
+
+    // prepare buffer of boolean voxels
+    // fill it with true if the given label is present
+    let mut voxels = [BoolVoxel(false); Chunk::SIZE as usize];
+    for i in 0..Chunk::SIZE {
+        let [x, y, z] = Chunk::delinearize(i);
+        voxels[i as usize] = BoolVoxel(matrix.get(x as usize, y as usize, z as usize) == label);
+    }
+
+    // run the algorithm to find exposed faces
+    let faces = RIGHT_HANDED_Y_UP_CONFIG.faces;
+    let mut buffer = GreedyQuadsBuffer::new(voxels.len());
+    greedy_quads(
+        &voxels,       // buffer of voxels to analyze
+        &Chunk {},     // chunk format
+        [0; 3],        // TODO: starting point
+        [SIZE - 1; 3], // TODO: end point
+        &faces,        // order of vertices on the face
+        &mut buffer    // output buffer
+    );
+    
+    // prepare buffers to read data generated from the algorithm
+    let num_indices   = buffer.quads.num_quads() * 6;
+    let num_vertices  = buffer.quads.num_quads() * 4;
+    let mut indexes   = Vec::with_capacity(num_indices );
+    let mut positions = Vec::with_capacity(num_vertices);
+    let mut normals   = Vec::with_capacity(num_vertices);
+
+    // fill the buffer with quads data
+    let mut index: u32 = 0;
+    for (group, face) in buffer.quads.groups.into_iter().zip(faces.into_iter()) {
+        for quad in group.into_iter() {
+            indexes  .extend_from_slice(&face.quad_mesh_indices(index));
+            positions.extend_from_slice(&face.quad_mesh_positions(&quad, 1.0));
+            normals  .extend_from_slice(&face.quad_mesh_normals());
+            index += 1;
         }
-    });
-    boxes.shrink_to_fit();
-    return ModelData(boxes);
+    }
+
+    // return the data necessary to build the mesh
+    schematic::Model::new(indexes, positions, normals)
 }
 
 
-// find the end point of a new box to generate
-#[deprecated]
-fn group_box(matrix: &Matrix<Label>, label: Label, from: Vec3i, to: Vec3i) -> Vec3i {
-    let mut end_point = to;
-    // group a line
-    'group_x: for x in (from.x + 1)..to.x {
-        if label != matrix.get(x, from.y, from.z) {
-            end_point.x = x;
-            break 'group_x;
-        }
+// generic boolean voxel to be used with the algorithm
+#[derive(Clone, Copy, Eq, PartialEq)]
+struct BoolVoxel(bool);
+impl Voxel for BoolVoxel {
+    fn get_visibility(&self) -> VoxelVisibility {
+        if self.0 {VoxelVisibility::Opaque} else {VoxelVisibility::Empty}
     }
-    // group a plane
-    'group_y: for y in (from.y + 1)..to.y {
-        for x in from.x..to.x {
-            if label != matrix.get(x, y, from.z) {
-                end_point.y = y;
-                break 'group_y;
-            }
-        }
-    }
-    // group a volume
-    'group_z: for z in (from.z + 1)..to.z {
-        for y in from.y..to.y {
-            for x in from.x..to.x {
-                if label != matrix.get(x, y, z) {
-                    end_point.z = z;
-                    break 'group_z;
-                }
-            }
-        }
-    }
-    return end_point;
+}
+impl MergeVoxel for BoolVoxel {
+    type MergeValue = Self;
+    fn merge_value(&self) -> Self::MergeValue {*self}
 }

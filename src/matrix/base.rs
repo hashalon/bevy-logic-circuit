@@ -62,6 +62,10 @@ impl<T: Clone + Copy + Eq + Default> Matrix<T> {
         }
     }
 
+    // TODO:
+    // Add the 24 possible order by which the matrix can be iterated...
+    
+
     pub fn get_neighbors(&self, x: usize, y: usize, z: usize, out_of_bound: T) -> [T; 6] {
         [
             if x > 0               {self.get(x - 1, y, z)} else {out_of_bound},

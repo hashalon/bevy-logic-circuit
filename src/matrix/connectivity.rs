@@ -9,7 +9,7 @@ pub fn find_connections(matrix: &Matrix<Label>, labels_amount: usize, threshold:
 
     // prepare a graph with all the nodes
     let mut graph = Csr::<Label, ()>::new();
-    for label in 1..=labels_amount as Label {graph.add_node(label);}
+    for label in 1 ..= labels_amount as Label {graph.add_node(label);}
 
     // traverse the matrix looking for connections
     matrix.for_each(&mut |x, y, z| {

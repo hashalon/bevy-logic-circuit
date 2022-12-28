@@ -28,6 +28,9 @@ petgraph = "0.6"
 bit-vec  = "0.6"
 fasthash = "0.4"
 
+# allow to declare global variables
+once_cell = "1.16.0"
+
 # convert voxel data into an optimized mesh of triangles
 block-mesh = "0.2.0"
 
