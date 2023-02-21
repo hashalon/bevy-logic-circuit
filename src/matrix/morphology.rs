@@ -1,6 +1,6 @@
 use std::hash::{Hash, Hasher};
 use bit_vec::BitVec;
-use fasthash::MetroHasher;
+use fxhash::FxHasher;
 use block_mesh::ndshape::{ConstShape, ConstShape3u32};
 use block_mesh::{
     greedy_quads, GreedyQuadsBuffer, MergeVoxel, Voxel,
@@ -35,29 +35,29 @@ pub fn find_bounding_boxes(matrix: &Matrix<Label>, labels_amount: usize) -> Vec<
 }
 
 
-// generate morphological signatures for a each component
+// generate morphological signatures for a each component and find the associated volume
 pub fn generate_morph(matrix: &Matrix<Label>, label: Label, abox: Box3i) -> (Morph, usize) {
     // prepare a bitvec to represent the morphological pattern
     let mut bitvec = BitVec::from_elem(abox.size().index_range(), false);
 
     // analyze the portion of the matrix to deduce a morphologic signature for the label
-    let mut index = 0usize;
-    let mut count = 0usize;
+    let mut index  = 0usize;
+    let mut volume = 0usize;
     matrix.for_each_in_box(abox, &mut |x, y, z| {
         if label == matrix.get(x, y, z) {
             bitvec.set(index, true);
-            count += 1;
+            volume += 1;
         }
         index += 1;
     });
     
     // generate the signature
-    let mut hasher = MetroHasher::default();
-    abox.size().hash(&mut hasher);
-    bitvec.hash(&mut hasher);
+    let mut state = FxHasher::default();
+    abox.size().hash(&mut state);
+    bitvec.hash(&mut state);
 
-    // return the signature and the number of cells covered by the shape
-    return (hasher.finish(), count);
+    // return the signature and the volume of the shape
+    return (state.finish(), volume);
 }
 
 
