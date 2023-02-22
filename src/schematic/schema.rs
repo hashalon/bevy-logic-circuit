@@ -11,9 +11,9 @@ use crate::schematic::*;
 // indicate position of the model and model to use
 #[derive(Serialize, Deserialize, Resource)]
 pub struct Schema {
-    pub wires: Vec<SchemaWire>,
-    pub comps: Vec<SchemaComp>,
-    pub models: Vec<Model>,
+    wires  : Vec<SchemaWire>,
+    comps  : Vec<SchemaComp>,
+    models : Vec<Model>,
 }
 
 
@@ -149,8 +149,17 @@ impl Schema {
 
 
 // build the whole circuit
-pub fn build_circuit (mut commands: Commands, schema: Res<Schema>) {
-
+pub fn build_circuit (
+    mut commands : Commands, 
+    mut meshes   : ResMut<Assets<Mesh>>,
+    materials    : Res<MaterialStore>,
+    schema       : Res<Schema>
+) {
+    // store generated mesh handles in a simple vector
+    let models: Vec<Handle<Mesh>> = schema.models.iter().map(|model|
+        meshes.add(model.to_mesh())
+    ).collect();
+    
     // generate list of wires
     let wires: Vec<Entity> = schema.wires.iter().map(|wire|
         commands.spawn((

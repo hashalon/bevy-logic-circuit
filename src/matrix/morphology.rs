@@ -115,7 +115,7 @@ pub fn generate_model(matrix: &Matrix<Label>, label: Label) -> schematic::Model 
     }
 
     // return the data necessary to build the mesh
-    schematic::Model::new(indexes, positions, normals)
+    schematic::Model{ indexes, positions, normals }
 }
 
 
