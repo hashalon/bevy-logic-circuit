@@ -6,22 +6,21 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Copy, Serialize, Deserialize)]
 pub struct Box3i {
-    pub begin : Vec3i,
-    pub end   : Vec3i,
+    pub begin: Vec3i,
+    pub end: Vec3i,
 }
-
 
 impl Box3i {
     #[inline]
     pub const fn new(begin: Vec3i, end: Vec3i) -> Self {
-        Self { begin: begin, end: end }
+        Self { begin, end }
     }
 
     #[inline]
     pub const fn define(x1: usize, y1: usize, z1: usize, x2: usize, y2: usize, z2: usize) -> Self {
         let begin = Vec3i::new(x1, y1, z1);
-        let end   = Vec3i::new(x2, y2, z2);
-        Self { begin: begin, end: end }
+        let end = Vec3i::new(x2, y2, z2);
+        Self { begin, end }
     }
 
     #[inline]

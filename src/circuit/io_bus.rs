@@ -1,32 +1,16 @@
-/**
- * IO Bus
- */
+use super::*;
 
-use bevy::prelude::*;
-use crate::circuit::base::*;
-
-// multiplexer
+/* IO Bus Entity: CompBus, PinsIn, PinsOut */
 #[derive(Component)]
-pub struct Bus;
-
-
-// mux entity
-#[derive(Bundle)]
-pub struct BusBundle {
-    pub comp: Bus,
-    pub pins_in : PinsIn,
-    pub pins_out: PinsOut,
-}
-
+pub struct CompIOBus;
 
 // combine multiple input values as boolean into a single wire
 pub fn sys_tick(
-    comp_query: Query<(&PinsIn, &PinsOut), With<Bus>>,
-    prev_query: Query<(&PinChannel, &DataPrevious)>,
-    mut next_query: Query<(&PinChannel, &mut DataNext)>
+    comp_query: Query<(&PinsIn, &PinsOut), With<CompIOBus>>,
+    prev_query: Query<(&PinChannel, &DataPrev)>,
+    mut next_query: Query<(&PinChannel, &mut DataNext)>,
 ) {
     for (pins_in, pins_out) in comp_query.iter() {
-
         // prepare stdin to read from and stdout to write to
 
         // write input pins data to stdout

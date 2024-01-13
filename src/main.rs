@@ -1,40 +1,31 @@
 //! Create a custom material to draw basic lines in 3D
 
-use bevy::{
-    prelude::*,
-    render::render_resource::*,
-};
+use bevy::prelude::*;
 
-mod math;
 mod circuit;
+mod math;
+mod matrix;
 mod schematic;
 
 use circuit::*;
 use schematic::*;
 
-
 fn main() {
-
-    let schema = Schema::new();
-
+    let schema = Schema::default();
 
     App::new()
-    
-    // default plugins to display window and setup renderer
-    .add_plugins(DefaultPlugins)
-
-    // construct the circuitry from schematic
-    .insert_resource(schema)
-    .add_startup_system(build_circuit)
-    //.add_startup_system(start_test)
-    
-    // add the systems that will run the circuitry
-    .add_plugin(CircuitPlugin)
-    .run();
+        // default plugins to display window and setup renderer
+        .add_plugins(DefaultPlugins)
+        // construct the circuitry from schematic
+        .insert_resource(schema)
+        .add_systems(Startup, build_circuit)
+        //.add_startup_system(start_test)
+        // add the systems that will run the circuitry
+        .add_plugins(CircuitPlugin)
+        .run();
 }
 
-
-fn start_test (
+fn _start_test(
     mut cmd: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
@@ -45,37 +36,27 @@ fn start_test (
         ..default()
     });
 
+    cmd.spawn(PbrBundle {
+        mesh: shape,
+        material: mat,
+        transform: Transform::from_xyz(0.0, 2.0, 0.0),
+        ..default()
+    });
 
-    cmd.spawn(
-        PbrBundle {
-            mesh: shape,
-            material: mat,
-            transform: Transform::from_xyz(0.0, 2.0, 0.0),
+    cmd.spawn(PointLightBundle {
+        point_light: PointLight {
+            intensity: 9000.0,
+            range: 100.0,
+            shadows_enabled: true,
             ..default()
-        }
-    );
-
-    cmd.spawn(
-        PointLightBundle {
-            point_light: PointLight {
-                intensity: 9000.0,
-                range: 100.0,
-                shadows_enabled: true,
-                ..default()
-            },
-            transform: Transform::from_xyz(8.0, 16.0, 8.0),
-            ..default()
-        }
-    );
+        },
+        transform: Transform::from_xyz(8.0, 16.0, 8.0),
+        ..default()
+    });
 
     cmd.spawn(Camera3dBundle {
         transform: Transform::from_xyz(0.0, 6.0, 12.0)
-        .looking_at(Vec3::new(0.0, 1.0, 0.0), Vec3::Y),
+            .looking_at(Vec3::new(0.0, 1.0, 0.0), Vec3::Y),
         ..default()
     });
-}
-
-
-fn hello () {
-    println!("Hello !");
 }

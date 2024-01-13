@@ -2,25 +2,13 @@ use std::collections::HashMap;
 use petgraph::{csr::Csr, visit::IntoNeighbors};
 use crate::circuit::*;
 use crate::schematic::*;
-use crate::matrix::*;
 
-
-// define the type of element to build for a given value from the matrix
-pub enum ToBuild {
-    Wire(Channel),
-    Bus,
-    Mux,
-    Demux(Data),
-    Constant(Data),
-    Gate(Operator),
-    Keyboard,
-    Empty,
-}
+mod base;
 
 
 // generate a schema from the given matrix
 pub fn convert_matrix_to_schema<T: Clone + Copy + Eq + Default>
-(matrix: &Matrix<T>, is_empty: &FnEmpty<T>, threshold: usize, convert: &dyn Fn(T, usize) -> ToBuild)
+(matrix: &Matrix<T>, is_empty: &FnEmpty<T>, threshold: usize, convert: &dyn Fn(T, usize) -> ElemType)
 -> Schema {
 
     // from the matrix analysis, generate a schematic

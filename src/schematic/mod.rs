@@ -1,28 +1,12 @@
 /**
  * Plugin for running logic circuits
  */
-use bevy::prelude::*;
-
+mod base;
+mod material;
 mod model;
-mod component;
 mod schema;
 
-
-pub use model::{ModelIndex, ModelAttr, ModelData};
-pub use component::{WireIndex, CompType, CompData, WireData};
+pub use base::*;
+pub use material::MaterialStore;
+pub use model::Model;
 pub use schema::*;
-
-
-
-fn start_build_from_schema(
-    mut commands: Commands,
-    schema: Res<Schema>,
-    mut meshes: ResMut<Assets<Mesh>>
-) {
-    let mut shapes = Vec::<Handle<Mesh>>::with_capacity(schema.models.len());
-    for model in schema.models.iter() {
-        shapes.push(meshes.add(model.build_mesh()));
-    }
-
-
-}

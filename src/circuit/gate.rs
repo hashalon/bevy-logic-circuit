@@ -1,14 +1,8 @@
-/**
- * logic components to build circuitry
- */
-
-use bevy::prelude::*;
-use crate::circuit::base::*;
+use super::*;
 use serde::{Deserialize, Serialize};
-use std::cmp::{min, max};
+use std::cmp::{max, min};
 
-
-// operators available
+/* Logic Gate Entity: Operator, PinsIn, PinsOut */
 #[derive(Clone, Copy, Component, Deserialize, Serialize)]
 pub enum Operator {
     Or,
@@ -21,24 +15,13 @@ pub enum Operator {
     Max,
 }
 
-
-// constant entity
-#[derive(Bundle)]
-pub struct GateBundle {
-    pub comp    : Operator,
-    pub pins_in : PinsIn,
-    pub pins_out: PinsOut,
-}
-
-
 // handle logic gates
 pub fn sys_tick(
     comp_query: Query<(&Operator, &PinsIn, &PinsOut)>,
-    prev_query: Query<&DataPrevious>,
-    mut next_query: Query<&mut DataNext>
+    prev_query: Query<&DataPrev>,
+    mut next_query: Query<&mut DataNext>,
 ) {
     for (operator, pins_in, pins_out) in comp_query.iter() {
-
         // find the values of input wires
         let mut values = Vec::<Data>::with_capacity(pins_in.0.len());
         for id in pins_in.0.iter() {
@@ -50,16 +33,16 @@ pub fn sys_tick(
         // compute the output value
         let mut data: Data = 0;
         match operator {
-            Operator::Or  => values.iter().for_each(|v| data |= *v),
+            Operator::Or => values.iter().for_each(|v| data |= *v),
             Operator::And => values.iter().for_each(|v| data &= *v),
             Operator::Nor => {
                 values.iter().for_each(|v| data |= *v);
                 data = !data;
-            },
+            }
             Operator::Nand => {
                 values.iter().for_each(|v| data &= *v);
                 data = !data;
-            },
+            }
             Operator::Add => values.iter().for_each(|v| data += *v),
             Operator::Mul => values.iter().for_each(|v| data *= *v),
             Operator::Min => values.iter().for_each(|v| data = min(data, *v)),

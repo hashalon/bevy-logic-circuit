@@ -26,9 +26,12 @@ num     = "0.4"
 disjoint-hash-set = "1.0"
 petgraph = "0.6"
 bit-vec  = "0.6"
-fasthash = "0.4"
+fxhash = "0.2.1"
+
+# allow to declare global variables
+once_cell = "1.16.0"
 
 # convert voxel data into an optimized mesh of triangles
 block-mesh = "0.2.0"
 
-bevy = "0.9"
+bevy = "0.12"
